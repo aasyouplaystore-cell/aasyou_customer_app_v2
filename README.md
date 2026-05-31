@@ -1,95 +1,259 @@
-# AasYou - Customer App
+# AasYou Customer App
 
-A comprehensive, state-of-the-art Flutter application for AasYou multivendor e-commerce. This app provides a seamless shopping experience for customers to browse nearby stores, manage carts, make secure payments, and track orders in real-time.
+Customer-facing Flutter mobile app for the AasYou hyperlocal marketplace (Android + iOS).
 
----
-
-## 🚀 Project Overview (Deep Dive)
-
-The **AasYou Customer App** is designed to bridge the gap between local vendors and customers. It supports a complex multivendor ecosystem with the following core modules:
-
-### 1. **Vendor & Catalog Management**
-- **Multivendor Ecosystem**: Customers can browse products from multiple nearby stores.
-- **Dynamic Categories & Brands**: Supports nested categories and brand-based filtering.
-- **Product Details**: Rich product pages with variant selection, FAQs, reviews, and high-quality image carousels.
-
-### 2. **Advanced Shopping Cart**
-- **Hybrid Cart Sync**: Manages a local cart using **Hive** for offline access and syncs with the remote server once the user is authenticated.
-- **Attachment Support**: Users can upload attachments (e.g., prescriptions or notes) during the checkout process.
-- **Promo Codes**: Real-time validation and application of discount coupons.
-
-### 3. **Secure Checkout & Payments**
-- **Multi-Gateway Integration**: Built-in support for **Stripe, Razorpay, Paystack, PayPal, and Flutterwave**.
-- **Wallet System**: A dedicated virtual wallet for recharging and direct payments, enhancing transaction speed.
-- **Cash on Delivery (COD)**: Legacy payment support for traditional users.
-
-### 4. **User Engagement & Trust**
-- **Triple Feedback System**: Allows customers to rate **Products, Sellers, and Delivery Boys** separately.
-- **Real-time Tracking**: Live order status tracking with interactive maps.
-- **Wishlist & Save for Later**: Tools for users to manage their future purchases.
-
-### 5. **Robust Infrastructure**
-- **Localization**: Full support for internationalization (i18n) via ARB files.
-- **Theme Engine**: Dynamic Light and Dark mode support.
-- **Location Intelligence**: Geocoding and map integration for precise delivery address management and delivery zone validation.
+Shoppers use this app to discover nearby stores, browse market categories, place orders, track delivery in real time, manage addresses, pay via Razorpay/Stripe/Paystack and chat with sellers.
 
 ---
 
-## 🏗️ Architecture & Technical Flow
+## Tech stack
 
-### **State Management**
-The project exclusively uses **Flutter BLoC** for predictable state management across 40+ modules. This ensures a clear separation of business logic from the UI.
+| Layer | Technology | Version |
+| --- | --- | --- |
+| Language | Dart | `>=3.0.0 <4.0.0` |
+| Framework | Flutter | `3.27.0+` (stable) |
+| State management | flutter_bloc | `^9.1.1` |
+| Routing | go_router | `^16.0.0` |
+| Networking | dio | `^5.8.0+1` |
+| Local storage | hive / hive_flutter | `^2.2.3` / `^1.1.0` |
+| Key-value store | shared_preferences | `^2.5.3` |
+| DI | get_it | `^9.2.1` |
+| Firebase BOM (Android) | firebase-bom | `34.9.0` |
+| firebase_core | Firebase Core | `^4.4.0` |
+| firebase_messaging | Push notifications | `^16.1.1` |
+| firebase_auth | Phone/Google/Apple auth | `^6.1.4` |
+| Payments | razorpay_flutter / flutter_stripe / pay_with_paystack | `^1.3.7` / `^11.4.0` / `^1.0.14` |
+| Maps | google_maps_flutter / flutter_map | `^2.10.0` / `^8.2.2` |
+| Location | geolocator / geocoding | `^14.0.2` / `^4.0.0` |
+| Deep links | app_links | `^6.4.1` |
+| Image cache | cached_network_image / fast_cached_network_image | `^3.4.1` / `^1.3.3+5` |
+| Force update | upgrader | `^12.5.0` |
+| Hot-restart | flutter_phoenix | `^1.1.1` |
 
-### **Navigation**
-Powered by **GoRouter**, providing a declarative routing system with support for nested navigation (StatefulShellRoute) and deep linking.
-
-### **Data Layer**
-- **Networking**: Handled by **Dio** with a centralized `ApiBaseHelper` for error handling and header management.
-- **Persistence**: Uses **Hive** for fast, local storage of user preferences, cart status, and location data.
-- **Authentication**: Integrated with **Firebase Auth** for phone/OTP and social logins.
-
----
-
-## ⚙️ Configuration Guide
-
-Key configurations are centralized to make the project easy to customize:
-
-- **Global Constants**: `lib/config/constant.dart`
-  - Change `baseUrl`, `googleMapsKey`, and `appName` here.
-- **API Routes**: `lib/config/api_routes.dart`
-  - Manage all endpoint paths in one place.
-- **Payment Setup**: `lib/config/payment_config.dart`
-  - Enable/Disable specific payment gateways.
-- **App Settings**: `lib/config/settings_data_instance.dart`
-  - A singleton that holds dynamic settings fetched from the server-side admin panel.
+Android `compileSdk 36`, `targetSdk 36`, `minSdk 24`, Java/Kotlin target `17`. iOS minimum deployment target `15.0`.
 
 ---
 
-## 🛠️ Developer Instructions
+## Prerequisites
 
-### **1. Setup**
+- Flutter SDK `3.27.0+` (stable channel)
+- Dart SDK `>=3.0.0 <4.0.0` (bundled with Flutter)
+- JDK `17` (Temurin/Zulu recommended)
+- Android Studio `2024.1+` with Android SDK Platform `36`, Build-Tools `36.x`, NDK as resolved by Flutter
+- Xcode `15.x+` and CocoaPods `1.15+` (macOS only, iOS builds)
+- Ruby `3.x` (for CocoaPods)
+- A device or emulator with Android `7.0` (API 24) or iOS `15.0` or higher
+- `firebase_cli` + `flutterfire_cli` (only if regenerating `firebase_options.dart`)
+
+---
+
+## Project setup
+
 ```bash
-# Install dependencies
+# 1. Clone
+git clone https://github.com/Ivibetech/customer-app_2.0.git
+cd customer-app_2.0
+
+# 2. Install Dart/Flutter dependencies
 flutter pub get
 
-# Run code generator (for Hive and Freezed models)
-flutter pub run build_runner build --delete-conflicting-outputs
+# 3. iOS only - install pods
+cd ios && pod install --repo-update && cd ..
+
+# 4. Generate code (Hive adapters, freezed, etc.)
+dart run build_runner build --delete-conflicting-outputs
+
+# 5. Generate localizations
+flutter gen-l10n
+
+# 6. Run on a connected device / emulator
+flutter run
 ```
 
-### **2. Firebase Setup**
-- Ensure `google-services.json` (Android) and `GoogleService-Info.plist` (iOS) are properly placed.
-- Run `flutterfire configure` to update `lib/firebase_options.dart`.
+### Signing (release builds)
 
-### **3. Important Notes**
-- **Single Store Logic**: The app can be configured to restrict orders to a single store per transaction (check `single_store` in settings).
-- **Delivery Zones**: Orders are only allowed if the user's address falls within a vendor's delivery zone.
-- **Permissions**: Ensure `location` and `notification` permissions are handled in `AndroidManifest.xml` and `Info.plist`.
+Release builds require an Android keystore. The keystore file itself MUST NOT be committed - obtain `aasyou-key.jks` from the credentials vault (see internal `CREDENTIAL` document) and place it under `android/`. Then create `android/key.properties`:
+
+```
+storePassword=<from credentials vault>
+keyPassword=<from credentials vault>
+keyAlias=<from credentials vault>
+storeFile=aasyou-key.jks
+```
+
+`android/app/build.gradle` reads this file at build time; without it, release signing is skipped.
+
+### Firebase
+
+- Firebase project: **aasyou-ecom** (project number `1008969943526`)
+- Android: `android/app/google-services.json` is required (already present for `com.aasyou.user`).
+- iOS: `ios/Runner/GoogleService-Info.plist` is required.
+- `lib/firebase_options.dart` is generated by `flutterfire configure` - only regenerate if the Firebase app config changes.
 
 ---
 
-## 📂 Project Structure Highlights
-- `/lib/bloc/`: Global state management.
-- `/lib/config/`: Core configurations and services.
-- `/lib/screens/`: Feature-specific UI modules (each with its own BLoC).
-- `/lib/services/`: Local persistence and external service wrappers.
-- `/lib/utils/`: Shared widgets and utility functions.
+## Configuration
+
+This app reads runtime constants from `lib/config/constant.dart` and `lib/config/payment_config.dart` (compile-time). There is no `.env` file. The keys below are the values you must verify per environment:
+
+| Key (in `AppConstant`) | Purpose |
+| --- | --- |
+| `baseUrl` | REST API base URL (production points to `https://aasyou.ivibetech.in/api/`) |
+| `appName` | Display name used in toasts / share intents |
+| `packageName` | Android application ID (`com.aasyou.user`) |
+| `androidMapKey` | Google Maps SDK key for Android (`AndroidManifest.xml` + Places SDK) |
+| `iosMapKey` | Google Maps SDK key for iOS (`AppDelegate.swift`) |
+| `serverClientId` | OAuth 2.0 web client ID for Google Sign-In (server-side ID token verification) |
+
+Payment gateway keys (Razorpay, Stripe publishable key, Paystack public key) live in `lib/config/payment_config.dart`. Replace test keys with live keys before publishing.
+
+Other platform-level config:
+
+- `android/app/src/main/AndroidManifest.xml` - Maps API key, deep-link host, notification channel
+- `ios/Runner/Info.plist` - usage descriptions (camera, photos, mic, speech, location, notifications)
+- `android/key.properties` - release signing (see above, untracked)
+
+---
+
+## Run commands
+
+```bash
+# Debug, default device
+flutter run
+
+# Debug, specific device
+flutter run -d <device-id>
+
+# Profile mode (perf tracing)
+flutter run --profile
+
+# Release mode on device
+flutter run --release
+
+# Hot rebuild generated code while developing
+dart run build_runner watch --delete-conflicting-outputs
+```
+
+---
+
+## Build commands
+
+```bash
+# Android - split per ABI APKs (recommended for sideload / QA)
+flutter build apk --release --split-per-abi
+
+# Android - single fat APK
+flutter build apk --release
+
+# Android - App Bundle for Play Console upload
+flutter build appbundle --release
+
+# iOS - release archive (must be run on macOS, requires provisioning profile)
+flutter build ipa --release
+
+# Clean
+flutter clean && flutter pub get
+```
+
+Output locations:
+- APKs: `build/app/outputs/flutter-apk/`
+- AAB: `build/app/outputs/bundle/release/`
+- IPA: `build/ios/ipa/`
+
+---
+
+## Deployment
+
+**Android (Google Play Console):**
+1. Bump `version:` in `pubspec.yaml` (semver + build number, e.g. `1.0.1+2`).
+2. Build the release bundle: `flutter build appbundle --release`.
+3. Upload `app-release.aab` to the **AasYou - Customer** app on Play Console.
+4. Promote to Internal Testing -> Closed Testing -> Production track.
+
+**iOS (App Store Connect):**
+1. Bump version + build number in `pubspec.yaml` and Xcode (`Runner` target).
+2. `flutter build ipa --release --export-method app-store`.
+3. Upload with `Transporter.app` or `xcrun altool --upload-app`.
+4. Submit for TestFlight review, then App Store release.
+
+**Force-update:** The `upgrader` package compares the running version against the store version on launch; bump the version code/build number on every release so existing users are prompted.
+
+---
+
+## Project structure
+
+```
+customer-app/
+├── android/                # Android wrapper, gradle, signing config, google-services.json
+├── ios/                    # iOS wrapper, Podfile, Info.plist, NotificationServiceExtension
+├── assets/                 # Images, icons, fonts (Lexend Deca), Lottie animations, sounds
+├── lib/
+│   ├── app/                # Bootstrap, BlocObserver, startup listeners
+│   ├── bloc/               # Global blocs (cart, theme, language, settings, user details)
+│   ├── config/             # API base, theme, DI container, payment + map keys, constants
+│   ├── l10n/               # ARB translation files + generated AppLocalizations
+│   ├── model/              # DTOs / response models
+│   ├── router/             # go_router declarative route table
+│   ├── screens/            # Feature screens (home, cart, checkout, orders, account, ...)
+│   ├── services/           # Cart, address, location, auth-guard, recent products
+│   ├── utils/              # Helpers, extensions, formatters
+│   ├── widgets/            # Reusable UI components
+│   ├── firebase_options.dart  # Generated by flutterfire configure
+│   ├── deep_link.dart      # App-links / dynamic-link handling
+│   └── main.dart           # Entry point
+├── linux/ / macos/ / windows/ / web/   # Auxiliary Flutter desktop/web targets
+└── pubspec.yaml            # Dart package manifest
+```
+
+---
+
+## Key features
+
+- Hyperlocal discovery - market categories, nearby stores, delivery zones, geofenced product catalog
+- Live address picker with Google Places autocomplete and reverse geocoding
+- Multi-payment checkout: Razorpay, Stripe, Paystack, wallet, COD
+- Real-time order tracking with delivery rider location updates
+- Phone OTP (with SMS auto-fill), Google Sign-In and Sign in with Apple
+- Push notifications via Firebase Cloud Messaging with custom notification sound + iOS Notification Service Extension
+- Shopping lists, save-for-later, wishlist and product reordering
+- Referral programme with deep-link attribution
+- Wallet, transactions and order history
+- Six-language localization with RTL support for Arabic
+- Light + dark themes with animated theme switcher and a 4-level dark-surface elevation system
+- In-app force-update via `upgrader` keyed to store version
+- Voice search via `speech_to_text`
+
+### Brand
+
+- Primary `#C2410C`, accent `#FF6A1F`
+- Typography: **Lexend Deca** (300-800)
+
+### Locales
+
+`en`, `hi`, `gu`, `te`, `fr`, `ar` - translations under `lib/l10n/app_*.arb`.
+
+### Architecture notes
+
+- State management: `flutter_bloc` everywhere, with a global `MultiBlocProvider` wired in `lib/config/global_bloc_providers.dart`.
+- Dependency injection: `get_it` service locator (`lib/config/dependency_injection_container.dart`).
+- Routing: declarative `go_router` table at `lib/router/app_routes.dart` with `auth_guard.dart` for protected routes.
+- Persistence: `hive` for structured caches (shopping list, recent products), `shared_preferences` for primitives.
+- Networking: `dio` with a shared instance configured in `lib/config/api_base_helper.dart`; endpoints centralised in `lib/config/api_routes.dart`.
+
+---
+
+## Related repos
+
+Part of the **AasYou 2.0** monorepo split across five sibling repositories under the `Ivibetech` org:
+
+- Backend API + Admin Panel + Seller Panel - https://github.com/Ivibetech/aasyou-backend-admin-seller_2.0
+- Customer Web App (Next.js) - https://github.com/Ivibetech/customer-web-app_2.0
+- Customer Mobile App (this repo) - https://github.com/Ivibetech/customer-app_2.0
+- Delivery Rider Mobile App - https://github.com/Ivibetech/rider-app_2.0
+- Seller Mobile App - https://github.com/Ivibetech/seller-app_2.0
+
+---
+
+## License
+
+Proprietary - (c) Ivibetech / Mobilise. All rights reserved. Internal use only; redistribution prohibited without written consent.
