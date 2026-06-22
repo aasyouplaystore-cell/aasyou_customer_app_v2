@@ -34,7 +34,8 @@ import '../../product_detail_page/view/product_detail_page.dart';
 import '../../product_listing_page/bloc/product_listing/product_listing_bloc.dart';
 
 class SearchPage extends StatefulWidget {
-  const SearchPage({super.key});
+  final bool startVoice;
+  const SearchPage({super.key, this.startVoice = false});
 
   @override
   State<SearchPage> createState() => _SearchPageState();
@@ -71,7 +72,15 @@ class _SearchPageState extends State<SearchPage> {
     isListening = ValueNotifier<bool>(false);
     _focusNode.addListener(_handleFocusChange);
     _focusNode.requestFocus();
-    _initializeSpeechToText();
+    _initializeSpeechToText().then((_) {
+      if (widget.startVoice && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _startListening();
+          }
+        });
+      }
+    });
 
     // Only reset if we have search results loaded, not if we have category/other listings
     final currentState = context.read<ProductListingBloc>().state;
@@ -104,7 +113,6 @@ class _SearchPageState extends State<SearchPage> {
     _microphoneGranted = hasMicPermission;
 
     if (!_microphoneGranted) {
-      debugPrint('Microphone permission not granted');
       return;
     }
 
@@ -144,7 +152,6 @@ class _SearchPageState extends State<SearchPage> {
   }
 
   void _onSpeechError(SpeechRecognitionError error) {
-    debugPrint('Speech error: ${error.errorMsg}');
     if (mounted) {
       setState(() {
         isListening.value = false;

@@ -703,7 +703,8 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
             ),
           ),
-          initialCountryCode: AppHelpers.countryCode,
+          initialCountryCode: phoneInputInitialIso2,
+          countries: phoneInputAllowedCountries,
           textInputAction: TextInputAction.done,
           focusNode: _phoneFocus,
           onChanged: (phone) {

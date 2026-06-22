@@ -425,6 +425,48 @@ class StoreCartSection extends StatelessWidget {
                   label: pill.label, bg: pill.bg, fg: pill.fg),
             );
           }(),
+          // Seller-supplied rejection reason — only rendered when the item
+          // was rejected AND the backend returned a non-empty reason. Keeps
+          // the customer informed without expanding the layout for any
+          // other status. Subtle red tint matches the rejected pill so the
+          // two read as a single visual block.
+          if (item.status == 'rejected' &&
+              (item.rejectionReason?.trim().isNotEmpty ?? false))
+            Padding(
+              padding: EdgeInsets.only(top: 6.h),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFEF2F2),
+                  border: Border.all(color: const Color(0xFFFECACA)),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      size: 14,
+                      color: Color(0xFFB91C1C),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Reason: ${item.rejectionReason!.trim()}',
+                        style: TextStyle(
+                          fontSize: isTablet(context) ? 13 : 10.sp,
+                          color: const Color(0xFF991B1B),
+                          fontFamily: AppTheme.fontFamily,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           if (item.product?.requiresOtp == 1 &&
               item.otp != null &&
               item.status != 'delivered' &&

@@ -58,6 +58,7 @@ import '../bloc/clear_cart/clear_cart_state.dart';
 import '../model/get_cart_model.dart';
 import '../widgets/cart_product_item.dart';
 import '../widgets/delivery_type_widget.dart';
+import '../widgets/fulfillment_toggle_widget.dart';
 import '../widgets/order_note_widget.dart';
 import '../widgets/removed_items_widget.dart';
 import '../widgets/wallet_usage_widget.dart';
@@ -630,16 +631,49 @@ class _CartPageState extends State<CartPage> {
                                         }
                                     ),
                                     SizedBox(height: 9.h,),
-                                    DeliveryTypeWidget(
-                                      selectedDeliveryType: selectedDeliveryType,
-                                      rushDeliveryCharge: billSummaryData?.rushDeliveryCharge ?? 0.0,
-                                      regularDeliveryCharge: billSummaryData?.regularDeliveryCharge ?? 0.0,
-                                      isRushDeliveryDisabled: billSummaryData?.isRushDeliveryAvailable == false,
-                                      onDeliveryTypeChanged: (DeliveryType type) {
-                                        setState(() {
-                                          selectedDeliveryType = type;
-                                        });
-                                        _updateCartWithDeliveryType(type);
+                                    BlocBuilder<CartUIBloc, CartUIState>(
+                                      builder: (context, uiState) {
+                                        final bool isSelfPickupAvailable = _computeIsSelfPickupAvailable(stateData);
+                                        final bool isSelfPickup =
+                                            uiState.selectedFulfillmentMode == FulfillmentMode.selfPickup;
+                                        return Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            if (isSelfPickupAvailable)
+                                              FulfillmentToggleWidget(
+                                                selectedMode: uiState.selectedFulfillmentMode,
+                                                isSelfPickupAvailable: isSelfPickupAvailable,
+                                                onModeChanged: (FulfillmentMode mode) {
+                                                  context.read<CartUIBloc>().add(SetFulfillmentMode(mode));
+                                                  if (mode == FulfillmentMode.selfPickup &&
+                                                      selectedDeliveryType != DeliveryType.regular) {
+                                                    setState(() {
+                                                      selectedDeliveryType = DeliveryType.regular;
+                                                    });
+                                                    // Keep CartUIBloc.selectedDeliveryType in sync (single source of truth fix).
+                                                    context.read<CartUIBloc>().add(SetDeliveryType(DeliveryType.regular));
+                                                    _updateCartWithDeliveryType(DeliveryType.regular);
+                                                  }
+                                                },
+                                              ),
+                                            if (!isSelfPickup) ...[
+                                              SizedBox(height: 9.h,),
+                                              DeliveryTypeWidget(
+                                                selectedDeliveryType: selectedDeliveryType,
+                                                rushDeliveryCharge: billSummaryData?.rushDeliveryCharge ?? 0.0,
+                                                regularDeliveryCharge: billSummaryData?.regularDeliveryCharge ?? 0.0,
+                                                isRushDeliveryDisabled: billSummaryData?.isRushDeliveryAvailable == false,
+                                                onDeliveryTypeChanged: (DeliveryType type) {
+                                                  setState(() {
+                                                    selectedDeliveryType = type;
+                                                  });
+                                                  context.read<CartUIBloc>().add(SetDeliveryType(type));
+                                                  _updateCartWithDeliveryType(type);
+                                                },
+                                              ),
+                                            ],
+                                          ],
+                                        );
                                       },
                                     ),
                                     BlocBuilder<CartUIBloc, CartUIState>(
@@ -760,18 +794,26 @@ class _CartPageState extends State<CartPage> {
                       } else {
                         totalAmount = 0.0;
                       }
-                      return Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if(selectedAddress != null)
-                            DeliveryAddressWidget(
-                              selectedAddress: selectedAddress,
-                              onTap: () {
-                                _showAddressSelectionBottomSheet();
-                              },
-                            ),
-                          _buildCheckoutSection(),
-                        ],
+                      return BlocBuilder<CartUIBloc, CartUIState>(
+                        builder: (context, uiState) {
+                          final bool isSelfPickup =
+                              uiState.selectedFulfillmentMode == FulfillmentMode.selfPickup;
+                          return Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (isSelfPickup)
+                                _buildPickupCard()
+                              else if (selectedAddress != null)
+                                DeliveryAddressWidget(
+                                  selectedAddress: selectedAddress,
+                                  onTap: () {
+                                    _showAddressSelectionBottomSheet();
+                                  },
+                                ),
+                              _buildCheckoutSection(isSelfPickup: isSelfPickup),
+                            ],
+                          );
+                        },
                       );
                     }
                     else {
@@ -975,7 +1017,9 @@ class _CartPageState extends State<CartPage> {
 
   void _navigateToPaymentOptions() async {
     final l10n = AppLocalizations.of(context);
-    if (selectedAddress == null) {
+    final bool isSelfPickup =
+        context.read<CartUIBloc>().state.selectedFulfillmentMode == FulfillmentMode.selfPickup;
+    if (!isSelfPickup && selectedAddress == null) {
       ToastManager.show(
           context: context,
           message: l10n?.pleaseSelectADeliveryAddressFirst ?? 'Please select a delivery address first',
@@ -1030,7 +1074,9 @@ class _CartPageState extends State<CartPage> {
             'customerName': Global.userData?.name.toString() ?? '',
             'email': Global.userData?.email.toString() ?? '',
             'phone': Global.userData?.mobile.toString() ?? '',
-            'deliveryAddress': formatAddressFromModel(selectedAddress!),
+            'deliveryAddress': selectedAddress != null
+                ? formatAddressFromModel(selectedAddress!)
+                : '',
           },
           addMoneyToWallet: false,
           context: context
@@ -1048,11 +1094,14 @@ class _CartPageState extends State<CartPage> {
         : <int, List<CartItemAttachment>>{};
 
     final l10n = AppLocalizations.of(context);
+    final bool isSelfPickup =
+        context.read<CartUIBloc>().state.selectedFulfillmentMode == FulfillmentMode.selfPickup;
+    final String deliveryMode = isSelfPickup ? 'self_pickup' : 'delivery';
     if(totalAmount <= 0) {
       context.read<CreateOrderBloc>().add(CreateOrderRequest(
         paymentType: 'wallet',
-        addressId: selectedAddress!.id!,
-        rushDelivery: selectedDeliveryType == DeliveryType.rush,
+        addressId: selectedAddress?.id ?? 0,
+        rushDelivery: !isSelfPickup && selectedDeliveryType == DeliveryType.rush,
         promoCode: promoCode,
         paymentDetails: selectedPaymentMethod == 'razorpay'
             ? {
@@ -1064,7 +1113,8 @@ class _CartPageState extends State<CartPage> {
         } : {},
         orderNote: orderNote,
         attachments: attachments,
-        useWallet: _userWantsWallet
+        useWallet: _userWantsWallet,
+        deliveryMode: deliveryMode,
       ));
       return;
     }
@@ -1079,8 +1129,8 @@ class _CartPageState extends State<CartPage> {
 
     context.read<CreateOrderBloc>().add(CreateOrderRequest(
       paymentType: selectedPaymentMethod!,
-      addressId: selectedAddress!.id!,
-      rushDelivery: selectedDeliveryType == DeliveryType.rush,
+      addressId: selectedAddress?.id ?? 0,
+      rushDelivery: !isSelfPickup && selectedDeliveryType == DeliveryType.rush,
       promoCode: promoCode,
       paymentDetails: selectedPaymentMethod == 'razorpay'
           ? {
@@ -1092,15 +1142,16 @@ class _CartPageState extends State<CartPage> {
       } : {},
       orderNote: orderNote,
       attachments: attachments,
-      useWallet: _userWantsWallet
+      useWallet: _userWantsWallet,
+      deliveryMode: deliveryMode,
     ));
   }
 
-  Widget _buildCheckoutSection() {
+  Widget _buildCheckoutSection({bool isSelfPickup = false}) {
     final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.only(top: 16, left: 16, right: 16, bottom: 20),
-      child: selectedAddress != null
+      child: (isSelfPickup || selectedAddress != null)
           ? Row(
         children: [
           if(totalAmount > 0.0)
@@ -1327,6 +1378,90 @@ class _CartPageState extends State<CartPage> {
         'isFromCartPage': true,
         'deliveryZoneId': deliveryZoneId
       },
+    );
+  }
+
+  /// Returns whether the cart is eligible for self-pickup.
+  /// TODO(master-catalog): default is false until the backend exposes
+  /// `allow_self_pickup` per Store (and/or a SettingsBloc feature flag).
+  /// When the API contract lands, iterate `cartData.first.data?.items` and
+  /// AND the store-level flags; fall back to a SettingsBloc flag for global rollout.
+  bool _computeIsSelfPickupAvailable(List<CartModel> cartData) {
+    // Feature flag OFF in production. Keeping the toggle hidden prevents
+    // backend rejections / bad orders until the contract is ready.
+    return false;
+  }
+
+  Widget _buildPickupCard() {
+    final l10n = AppLocalizations.of(context);
+    Store? store;
+    if (stateData.isNotEmpty) {
+      final items = stateData.first.data?.items ?? const <CartItem>[];
+      if (items.isNotEmpty) {
+        store = items.first.store;
+      }
+    }
+    final String storeName = store?.name ?? (l10n?.store ?? 'Store');
+    // TODO(master-catalog): replace with store.address / store.lat / store.lng
+    // once the Store model exposes them via the cart API contract.
+    // TODO(master-catalog): replace literal with l10n + real Store address once
+    // the Store model exposes address / lat / lng via the cart API contract.
+    const String pickupAddress = 'Pickup address not available';
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+      padding: EdgeInsets.all(12.w),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                TablerIcons.building_store,
+                color: AppTheme.primaryColor,
+                size: 20.r,
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Text(
+                  l10n?.pickup ?? 'Pickup',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          Text(
+            storeName,
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          SizedBox(height: 4.h),
+          Text(
+            pickupAddress,
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: Colors.grey.shade700,
+            ),
+          ),
+          // TODO(master-catalog): restore Get-directions + Copy-address actions
+          // (with `hasMapsLink`, `_openMapsForPickup`, Clipboard.setData, and
+          // l10n keys getDirections / addressCopied / copyAddress /
+          // pickupAddressNotAvailable) once the Store model exposes
+          // address / lat / lng via the cart API contract.
+        ],
+      ),
     );
   }
 }

@@ -134,6 +134,11 @@ class StoreData {
   final String? avgStoreRating;
   final int? totalStoreFeedback;
   final bool? isRecommended;
+  // Shop-Follow fields surfaced by the backend (StoreResource + withCount).
+  // Both are nullable so older list endpoints that haven't been updated
+  // upstream still deserialize cleanly without crashing.
+  final bool? isFollowed;
+  final int? followersCount;
 
   StoreData({
     this.id,
@@ -160,6 +165,8 @@ class StoreData {
     this.avgStoreRating,
     this.totalStoreFeedback,
     this.isRecommended,
+    this.isFollowed,
+    this.followersCount,
   });
 
   factory StoreData.fromJson(Map<String, dynamic> json) {
@@ -188,6 +195,45 @@ class StoreData {
       avgStoreRating: parseString(json['avg_store_rating']),
       totalStoreFeedback: parseInt(json['total_store_feedback']),
       isRecommended: parseBool(json['is_recommended']),
+      isFollowed: parseBool(json['is_followed']),
+      followersCount: parseInt(json['followers_count']),
+    );
+  }
+
+  /// Returns a copy with overridden fields. Used by the follow flow so the
+  /// UI can optimistically flip [isFollowed] / [followersCount] without
+  /// mutating the underlying model instance.
+  StoreData copyWith({
+    bool? isFollowed,
+    int? followersCount,
+  }) {
+    return StoreData(
+      id: id,
+      name: name,
+      slug: slug,
+      productCount: productCount,
+      description: description,
+      contactNumber: contactNumber,
+      contactEmail: contactEmail,
+      address: address,
+      latitude: latitude,
+      longitude: longitude,
+      distance: distance,
+      timing: timing,
+      logo: logo,
+      banner: banner,
+      sameLocation: sameLocation,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+      verificationStatus: verificationStatus,
+      visibilityStatus: visibilityStatus,
+      status: status,
+      avgProductsRating: avgProductsRating,
+      avgStoreRating: avgStoreRating,
+      totalStoreFeedback: totalStoreFeedback,
+      isRecommended: isRecommended,
+      isFollowed: isFollowed ?? this.isFollowed,
+      followersCount: followersCount ?? this.followersCount,
     );
   }
 
@@ -216,6 +262,8 @@ class StoreData {
     'avg_store_rating': avgStoreRating,
     'total_store_feedback': totalStoreFeedback,
     'is_recommended': isRecommended,
+    'is_followed': isFollowed,
+    'followers_count': followersCount,
   };
 }
 

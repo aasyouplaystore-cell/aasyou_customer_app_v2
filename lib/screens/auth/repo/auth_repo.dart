@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:aasyou/config/api_base_helper.dart';
 import 'package:aasyou/config/api_routes.dart';
@@ -130,7 +131,7 @@ class AuthRepository {
         phoneNumber: phoneNumber,
         verificationCompleted: (PhoneAuthCredential credential) {},
         verificationFailed: (FirebaseAuthException e) {
-          throw ApiException(e.message ?? 'Failed to send OTP');
+          throw ApiException(_describeFirebaseAuthError(e, 'Failed to send OTP'));
         },
         codeSent: (String verificationId, int? resendToken) {},
         codeAutoRetrievalTimeout: (String verificationId) {},
@@ -138,6 +139,10 @@ class AuthRepository {
       );
 
       return '';
+    } on FirebaseAuthException catch (e) {
+      throw ApiException(_describeFirebaseAuthError(e, 'Failed to send OTP'));
+    } on PlatformException catch (e) {
+      throw ApiException(_describePlatformError(e, 'Failed to send OTP'));
     } catch (e) {
       throw ApiException(e.toString());
     }
@@ -155,7 +160,9 @@ class AuthRepository {
         phoneNumber: phoneNumber,
         verificationCompleted: (PhoneAuthCredential credential) {},
         verificationFailed: (FirebaseAuthException e) {
-          completer.completeError(e.message ?? 'Failed to send OTP');
+          completer.completeError(
+            ApiException(_describeFirebaseAuthError(e, 'Failed to send OTP')),
+          );
         },
         codeSent: (String verificationId, int? resendToken) {
           completer.complete(verificationId);
@@ -169,6 +176,10 @@ class AuthRepository {
 
       final verificationId = await completer.future;
       return {'verificationId': verificationId};
+    } on FirebaseAuthException catch (e) {
+      throw ApiException(_describeFirebaseAuthError(e, 'Failed to send OTP'));
+    } on PlatformException catch (e) {
+      throw ApiException(_describePlatformError(e, 'Failed to send OTP'));
     } catch (e) {
       throw ApiException(e.toString());
     }
@@ -184,9 +195,31 @@ class AuthRepository {
 
       await _auth.signInWithCredential(credential);
       return true;
+    } on FirebaseAuthException catch (e) {
+      throw ApiException(_describeFirebaseAuthError(e, 'OTP verification failed'));
+    } on PlatformException catch (e) {
+      throw ApiException(_describePlatformError(e, 'OTP verification failed'));
     } catch (e) {
       throw ApiException(e.toString());
     }
+  }
+
+  // Surface Firebase auth errors with their stable `code` so debugging (and
+  // user-facing messaging) can distinguish `invalid-verification-code` from
+  // `session-expired` from `internal-error` etc. Without this the catch
+  // block previously returned `e.toString()`, which on Pigeon-wrapped
+  // platform errors collapses to the generated host-API method name and
+  // hides the real cause.
+  String _describeFirebaseAuthError(FirebaseAuthException e, String fallback) {
+    final code = e.code.isEmpty ? 'unknown' : e.code;
+    final message = (e.message ?? '').trim();
+    return message.isEmpty ? '[$code] $fallback' : '[$code] $message';
+  }
+
+  String _describePlatformError(PlatformException e, String fallback) {
+    final code = e.code.isEmpty ? 'platform-error' : e.code;
+    final message = (e.message ?? '').trim();
+    return message.isEmpty ? '[$code] $fallback' : '[$code] $message';
   }
 
   /// Phone-callback API.
@@ -212,6 +245,52 @@ class AuthRepository {
         return response.data;
       }
       return {};
+    } catch (e) {
+      throw ApiException(e.toString());
+    }
+  }
+
+  /// Exchanges a Truecaller `authorization_code` + PKCE `code_verifier` for
+  /// an AasYou session.
+  ///
+  /// Backend (`/auth/truecaller/callback`) performs the OAuth code-for-token
+  /// exchange against Truecaller, verifies the phone, and returns the same
+  /// shape as `mobileOtpLogin` — caller can treat the response as a normal
+  /// phone-based login result.
+  ///
+  /// Optional [friendsCode] / [iso2] / [country] are forwarded to support
+  /// the "register via Truecaller" path (mirrors `register()`'s extra args).
+  Future<Map<String, dynamic>> truecallerLogin({
+    required String authorizationCode,
+    required String codeVerifier,
+    String? friendsCode,
+    String? iso2,
+    String? country,
+  }) async {
+    try {
+      String? fcmToken = await getFCMToken();
+      final response = await AppHelpers.apiBaseHelper.postAPICall(
+        ApiRoutes.truecallerAuthApi,
+        {
+          'authorization_code': authorizationCode,
+          'code_verifier': codeVerifier,
+          'device_type': getDeviceType(),
+          'fcm_token': fcmToken,
+          if (friendsCode != null && friendsCode.isNotEmpty)
+            'friends_code': friendsCode,
+          if (iso2 != null && iso2.isNotEmpty) 'iso_2': iso2,
+          if (country != null && country.isNotEmpty) 'country': country,
+        },
+      );
+      // Mirror mobileOtpLogin's success contract: status 200 AND
+      // success==true. Anything else surfaces as ApiException so the
+      // caller can show an inline error toast instead of silently
+      // navigating to /home with no session.
+      if (response.statusCode == 200 && response.data['success'] == true) {
+        return response.data;
+      }
+      throw ApiException(
+          response.data['message']?.toString() ?? 'Truecaller login failed');
     } catch (e) {
       throw ApiException(e.toString());
     }

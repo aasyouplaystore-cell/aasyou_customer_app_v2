@@ -231,9 +231,9 @@ class _DashboardState extends State<Dashboard>
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(widget.navigationShell.currentIndex == 1
-                      ? HeroiconsSolid.squares2x2
-                      : HeroiconsOutline.squares2x2),
-                  label: l10n?.categories ?? 'Categories',
+                      ? RemixIcons.community_fill
+                      : RemixIcons.community_line),
+                  label: 'Markets',
                 ),
                 if (AppHelpers.systemVendorTypeIsSingle)
                   BottomNavigationBarItem(

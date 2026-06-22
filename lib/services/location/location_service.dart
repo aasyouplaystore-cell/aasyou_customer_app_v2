@@ -8,6 +8,71 @@ import '../../model/user_location/user_location_model.dart';
 
 class LocationService {
   
+  /// Zepto/Blinkit-style "silent" auto-locate.
+  ///
+  /// Use this on first-load splash. It tries to fetch + store the device's
+  /// current location BUT:
+  ///   * Never opens the system Location settings screen
+  ///   * Never opens the app settings screen
+  ///   * Only triggers the OS permission prompt the FIRST time (when
+  ///     status is `denied`, not `deniedForever`)
+  ///
+  /// Returns the resolved [UserLocation] when GPS was successfully read,
+  /// or `null` for every "we can't get a location right now" case (service
+  /// off, permission denied/deniedForever, timeout, geocoding failure).
+  /// Callers can then fall back to the admin's default lat/lng.
+  static Future<UserLocation?> tryAutoLocateSilent() async {
+    try {
+      // Bail if device-level Location services are off — we don't push
+      // the user into the system settings on first launch.
+      if (!await Geolocator.isLocationServiceEnabled()) return null;
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        // One-time native prompt; if user denies we silently fall back.
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission != LocationPermission.whileInUse &&
+          permission != LocationPermission.always) {
+        return null;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          distanceFilter: 0,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+
+      final placemarks = await placemarkFromCoordinates(
+        position.latitude, position.longitude,
+      );
+      final p = placemarks.isNotEmpty ? placemarks[0] : const Placemark();
+      final fullAddress = [
+        p.street, p.subLocality, p.locality, p.administrativeArea,
+      ].where((e) => e != null && e.isNotEmpty).join(', ');
+
+      final userLocation = UserLocation(
+        latitude: position.latitude,
+        longitude: position.longitude,
+        fullAddress: fullAddress.isEmpty ? '' : fullAddress,
+        area: p.subLocality ?? '',
+        city: p.locality ?? '',
+        state: p.administrativeArea ?? '',
+        country: p.country ?? '',
+        pincode: p.postalCode ?? '',
+        landmark: p.name ?? '',
+      );
+
+      await HiveLocationHelper.setCurrentUserLocation(userLocation);
+      return userLocation;
+    } catch (e) {
+      log('tryAutoLocateSilent failed: $e');
+      return null;
+    }
+  }
+
   // In lib/utils/location/location_service.dart
   static Future<bool> ensureServiceAndPermission() async {
     bool servicesOn = await Geolocator.isLocationServiceEnabled();

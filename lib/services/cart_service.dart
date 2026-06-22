@@ -28,7 +28,6 @@ class CartService {
 
       final itemCount = items.length;
 
-      debugPrint('🛒 Local cart update → items: $itemCount qty: $totalQuantity');
 
       cartStateBloc.add(
         UpdateCartVisibility(showViewCart: itemCount > 0),
@@ -60,7 +59,6 @@ class CartService {
       ) {
     if ( current is CartLoaded) {
       if (current.items.isNotEmpty) {
-        debugPrint('🎉 Cart animation triggered (first item added)');
         _showCart(context);
       }
     }

@@ -14,9 +14,11 @@ import 'package:aasyou/utils/widgets/custom_image_container.dart';
 import 'package:aasyou/utils/widgets/custom_scaffold/custom_scaffold.dart';
 import 'package:aasyou/utils/widgets/empty_states_page.dart';
 import 'package:aasyou/utils/widgets/recommend_badge.dart';
+import 'package:aasyou/utils/widgets/store_follow_heart.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../config/helper.dart';
 import '../../../config/theme.dart';
+import '../../../screens/store_follow/bloc/store_follow_bloc.dart';
 import '../../../utils/widgets/custom_refresh_indicator.dart';
 import '../../../utils/widgets/custom_textfield.dart';
 
@@ -274,6 +276,18 @@ class StoreCardBanner extends StatelessWidget {
     final int totalStoreFeedback = store.totalStoreFeedback!;
     log('Store Distance ${distance.toStringAsFixed(1)}');
 
+    // Seed the Shop-Follow controller from the server snapshot so this
+    // banner and every other card showing the same store flip together
+    // the moment any one of them is tapped.
+    final int? storeId = store.id;
+    if (storeId != null) {
+      StoreFollowController.instance.seedFromStore(
+        storeId: storeId,
+        isFollowed: store.isFollowed,
+        followersCount: store.followersCount,
+      );
+    }
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -319,6 +333,30 @@ class StoreCardBanner extends StatelessWidget {
                     start: 8,
                     child: RecommendBadge(
                       style: RecommendBadgeStyle.chip,
+                    ),
+                  ),
+
+                // Shop-Follow heart anchored to the banner top-right so it
+                // sits over the banner image without colliding with the
+                // overhanging logo (start) or rating pill (bottom-end).
+                if (storeId != null)
+                  PositionedDirectional(
+                    top: 8,
+                    end: 8,
+                    child: Material(
+                      color:
+                          Theme.of(context).colorScheme.surface.withValues(
+                                alpha: 0.92,
+                              ),
+                      shape: const CircleBorder(),
+                      elevation: 1,
+                      shadowColor: Colors.black.withValues(alpha: 0.18),
+                      child: StoreFollowHeart(
+                        storeId: storeId,
+                        fallbackIsFollowed: store.isFollowed ?? false,
+                        fallbackFollowersCount: store.followersCount ?? 0,
+                        iconSize: 20,
+                      ),
                     ),
                   ),
 

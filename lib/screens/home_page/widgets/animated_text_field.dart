@@ -1,6 +1,5 @@
 import 'package:animated_hint_textfield/animated_hint_textfield.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:go_router/go_router.dart';
 import 'package:heroicons_flutter/heroicons_flutter.dart';
 import 'package:aasyou/config/helper.dart';
@@ -20,7 +19,7 @@ class CustomAnimatedTextField extends StatelessWidget {
         horizontal: 12.0,
       ),
       child: SizedBox(
-        height: 42,
+        height: 50,
         child: GestureDetector(
           onTap: () {
             GoRouter.of(context).push(AppRoutes.search);
@@ -38,11 +37,12 @@ class CustomAnimatedTextField extends StatelessWidget {
                   readOnly: true,
                   enabled: false,
                   hintTextStyle: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.6),
-                      // color: Colors.black38
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.75),
                   ),
                   hintTexts: removeUnderscoresFromStringList(searchHintTextList ?? [
+                    'Search for stores or products...',
                     'Search "ice cream"',
                     'Search "milk"',
                     'Search "rice"',
@@ -51,6 +51,20 @@ class CustomAnimatedTextField extends StatelessWidget {
                   ]),
                   minLines: 1,
                   decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 14,
+                    ),
+                    hintText: 'Search for stores or products...',
+                    hintStyle: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .tertiary
+                          .withValues(alpha: 0.75),
+                    ),
                     border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide.none
@@ -67,8 +81,8 @@ class CustomAnimatedTextField extends StatelessWidget {
                     filled: true,
                     prefixIcon: Icon(
                       HeroiconsOutline.magnifyingGlass,
-                      color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.6),
-                      // color: Colors.black,
+                      color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.75),
+                      size: 22,
                     ),
                   ),
                 ),
@@ -80,12 +94,15 @@ class CustomAnimatedTextField extends StatelessWidget {
                 child: Center(
                   child: GestureDetector(
                     onTap: () {
-                      GoRouter.of(context).push(AppRoutes.shoppingList);
+                      GoRouter.of(context).push(
+                        AppRoutes.search,
+                        extra: {'startVoice': true},
+                      );
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(8.0),
                       child: Icon(
-                        TablerIcons.pencil,
+                        HeroiconsOutline.microphone,
                         color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.6),
                         size: 22,
                       ),

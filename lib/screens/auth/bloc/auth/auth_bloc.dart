@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:aasyou/config/global.dart';
 import 'package:aasyou/config/helper.dart';
@@ -377,18 +378,52 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e, s) {
       log('Phone verification failed: $e', stackTrace: s);
+      log('  type: ${e.runtimeType}');
       String errorMessage = e.toString();
+      String? code;
+      String? rawMessage;
+
+      // Pigeon-wrapped failures arrive as PlatformException whose `code` /
+      // `message` carry the actual Firebase auth error. Detect both shapes
+      // so the user sees a real diagnosis instead of the raw host-API name.
       if (e is FirebaseAuthException) {
-        switch (e.code) {
+        code = e.code;
+        rawMessage = e.message;
+      } else if (e is PlatformException) {
+        code = e.code;
+        rawMessage = e.message;
+      }
+
+      if (code != null) {
+        switch (code) {
           case 'invalid-verification-code':
+          case 'ERROR_INVALID_VERIFICATION_CODE':
             errorMessage = 'The entered OTP is incorrect. Please try again.';
             break;
           case 'session-expired':
+          case 'ERROR_SESSION_EXPIRED':
             errorMessage =
                 'The OTP session has expired. Please request a new OTP.';
             break;
+          case 'invalid-verification-id':
+          case 'ERROR_INVALID_VERIFICATION_ID':
+            errorMessage =
+                'The verification session is invalid. Please request a new OTP.';
+            break;
+          case 'network-request-failed':
+            errorMessage = 'Network error. Please check your connection.';
+            break;
+          case 'too-many-requests':
+            errorMessage = 'Too many requests. Please try again later.';
+            break;
+          case 'internal-error':
+          case 'ERROR_INTERNAL_ERROR':
+            // Surface the underlying message — these often hide App Check /
+            // SafetyNet rejections worth showing to ops.
+            errorMessage = '[internal-error] ${rawMessage ?? "Firebase internal error"}';
+            break;
           default:
-            errorMessage = e.message ?? 'Verification failed';
+            errorMessage = '[$code] ${rawMessage ?? "Verification failed"}';
         }
       }
       emit(AuthFailed(error: errorMessage));

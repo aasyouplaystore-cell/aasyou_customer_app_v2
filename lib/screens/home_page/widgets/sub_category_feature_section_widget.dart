@@ -21,10 +21,8 @@ class _SubCategoryFeatureSectionWidgetState extends State<SubCategoryFeatureSect
 
   int _getCrossAxisCount(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth >= 1200) return 10;
-    if (screenWidth >= 800) return 6;
-    if (screenWidth >= 600) return 4;
-    if (screenWidth >= 400) return 4;
+    // Phase C1: 4 on phone (<600w), 6 on tablet/desktop (>=600w)
+    if (screenWidth >= 600) return 6;
     return 4;
   }
 
@@ -111,12 +109,15 @@ class _SubCategoryFeatureSectionWidgetState extends State<SubCategoryFeatureSect
                     crossAxisCount: _getCrossAxisCount(context),
                     crossAxisSpacing: _getSpacing(context),
                     mainAxisSpacing: _getSpacing(context),
-                    childAspectRatio: 0.62,
+                    childAspectRatio: 0.85,
                   ),
-                  itemCount: state.subCategoryData.length >= 20 ? 20 : state.subCategoryData.length,
+                  // Phase C1: cap visible items at 12
+                  itemCount: state.subCategoryData.length >= 12 ? 12 : state.subCategoryData.length,
                   itemBuilder: (context, index) {
                     final subCategoryData = state.subCategoryData[index];
-                    return InkWell(
+                    return CustomSubCategoryCard(
+                      categoryImage: subCategoryData.image!,
+                      categoryName: subCategoryData.title!,
                       onTap: () {
                         GoRouter.of(context).push(
                           AppRoutes.productListing,
@@ -127,14 +128,9 @@ class _SubCategoryFeatureSectionWidgetState extends State<SubCategoryFeatureSect
                             'totalProduct': subCategoryData.productCount,
                             'type': ProductListingType.category,
                             'identifier': subCategoryData.slug,
-                          }
+                          },
                         );
                       },
-                      borderRadius: BorderRadius.circular(12),
-                      child: CustomSubCategoryCard(
-                        categoryImage: subCategoryData.image!,
-                        categoryName: subCategoryData.title!,
-                      ),
                     );
                   },
                 ),

@@ -23,7 +23,11 @@ class MarketCategoryRepository {
     required int perPage,
     required int currentPage,
     String? slug,
-    bool includeNoProduct = true,
+    // Default false — markets / sub-markets are zone + store-availability
+    // gated so the user only sees categories that have at least one active
+    // shop in their delivery zone. Callers that genuinely need the
+    // "show empty markets too" variant (admin previews, etc.) can pass true.
+    bool includeNoProduct = false,
   }) async {
     try {
       final stored = LocationService.getStoredLocation();
@@ -49,7 +53,9 @@ class MarketCategoryRepository {
     }
   }
 
-  /// Convenience wrapper: detail mode (always passes slug + include_no_product).
+  /// Convenience wrapper: detail mode. Zone + store-availability filtered
+  /// like the main listing — only sub-markets with at least one shop in
+  /// the user's zone come back.
   Future<Map<String, dynamic>> fetchMarketCategoryDetail({
     required String slug,
     int perPage = 30,
@@ -59,7 +65,7 @@ class MarketCategoryRepository {
       perPage: perPage,
       currentPage: currentPage,
       slug: slug,
-      includeNoProduct: true,
+      includeNoProduct: false,
     );
   }
 

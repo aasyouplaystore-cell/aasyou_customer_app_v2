@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart' as material show Badge;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:heroicons_flutter/heroicons_flutter.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:aasyou/config/theme.dart';
 import 'package:aasyou/model/sorting_model/sorting_model.dart';
 import 'package:aasyou/screens/near_by_stores/bloc/store_detail/store_detail_bloc.dart';
@@ -18,6 +21,12 @@ import 'package:aasyou/utils/widgets/custom_product_card.dart';
 import 'package:aasyou/utils/widgets/recommend_badge.dart';
 import 'package:aasyou/utils/widgets/custom_refresh_indicator.dart';
 import 'package:aasyou/utils/widgets/custom_scaffold/custom_scaffold.dart';
+import 'package:aasyou/screens/store_follow/bloc/store_follow_bloc.dart';
+import 'package:aasyou/config/api_base_helper.dart';
+import 'package:aasyou/config/global.dart';
+import 'package:aasyou/router/app_routes.dart';
+import 'package:aasyou/utils/widgets/custom_toast.dart';
+import 'package:go_router/go_router.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:aasyou/utils/widgets/custom_shimmer.dart';
 import 'package:aasyou/utils/widgets/custom_sorting_bottom_sheet.dart';
@@ -26,6 +35,7 @@ import 'package:aasyou/utils/widgets/empty_states_page.dart';
 import 'package:remixicon/remixicon.dart';
 import '../../../bloc/user_cart_bloc/user_cart_bloc.dart';
 import '../../../bloc/user_cart_bloc/user_cart_event.dart';
+import '../../../bloc/user_cart_bloc/user_cart_state.dart';
 import '../../../config/helper.dart';
 import '../../../model/user_cart_model/cart_sync_action.dart';
 import '../../../model/user_cart_model/user_cart.dart';
@@ -182,12 +192,50 @@ class _NearbyStoreDetailsState extends State<_NearbyStoreDetailsView> {
         title: _buildSearchBar(),
         titleSpacing: 0,
         backgroundColor: Theme.of(context).colorScheme.surface,
+        actions: [
+          _buildCartAction(),
+          const SizedBox(width: 6),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
           child: Container(color: isDarkMode(context) ? Colors.grey.shade800 : Colors.grey.shade300, height: 1),
         ),
       ),
       body: _buildBody(),
+    );
+  }
+
+  Widget _buildCartAction() {
+    return IconButton(
+      tooltip: 'Cart',
+      onPressed: () => GoRouter.of(context).push(AppRoutes.cart),
+      icon: BlocBuilder<CartBloc, CartState>(
+        builder: (context, state) {
+          int itemCount = 0;
+          if (state is CartLoaded) {
+            itemCount = state.totalItems;
+          }
+          return material.Badge(
+            isLabelVisible: itemCount > 0,
+            label: Text(
+              itemCount > 9 ? '9+' : itemCount.toString(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+                height: 1.0,
+              ),
+            ),
+            backgroundColor: Colors.red.shade600,
+            textColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Icon(
+              HeroiconsOutline.shoppingCart,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -245,6 +293,18 @@ class _NearbyStoreDetailsState extends State<_NearbyStoreDetailsView> {
   }
 
   Widget _buildScrollableContent(StoreData store) {
+    // Seed the Shop-Follow controller with the server snapshot so the
+    // header heart and follower count stay in sync with every other card
+    // (popular shop strip, listing banner, map popup, browse strip).
+    final int? storeId = store.id;
+    if (storeId != null) {
+      StoreFollowController.instance.seedFromStore(
+        storeId: storeId,
+        isFollowed: store.isFollowed,
+        followersCount: store.followersCount,
+      );
+    }
+
     return CustomRefreshIndicator(
       onRefresh: () async {
         context.read<ProductListingBloc>().add(
@@ -262,14 +322,19 @@ class _NearbyStoreDetailsState extends State<_NearbyStoreDetailsView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStoreHeader(store, store.distance ?? 0.0, store.avgStoreRating ?? '0.0', store.totalStoreFeedback!),
-            const SizedBox(height: 68),
-            _buildStoreInfo(store, store.distance ?? 0.0),
+            _buildStoreHero(
+              store,
+              store.avgStoreRating ?? '0.0',
+              store.totalStoreFeedback ?? 0,
+            ),
+            const SizedBox(height: 12),
+            _buildActionButtonsRow(store),
+            const SizedBox(height: 14),
             Container(
               height: 5,
               color: Theme.of(context).colorScheme.surfaceContainer,
             ),
-            const SizedBox(height: 10,),
+            const SizedBox(height: 10),
             BlocBuilder<ProductListingBloc, ProductListingState>(
               builder: (context, state) => _buildProductsSection(state),
             ),
@@ -279,121 +344,336 @@ class _NearbyStoreDetailsState extends State<_NearbyStoreDetailsView> {
     );
   }
 
-  Widget _buildStoreHeader(StoreData store, double distance, String rating, int totalStoreFeedback) {
+  /// Mockup-style hero: banner with "Open Now" pill, then a floating white
+  /// card overlapping the bottom of the banner with logo / name / location /
+  /// rating + product count, and the Follow button on the right edge.
+  Widget _buildStoreHero(
+    StoreData store,
+    String rating,
+    int totalStoreFeedback,
+  ) {
+    final bool isOpen = store.status?.isOpen == true;
+    final double bannerHeight = isTablet(context) ? 260 : 180;
+    final double doubleRating = double.tryParse(rating) ?? 0;
+
     return Stack(
       clipBehavior: Clip.none,
       children: [
+        // Banner image — rounded bottom corners to feel like a card.
         ClipRRect(
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+          ),
           child: Container(
-            height: isTablet(context) ? 280 : 170,
+            height: bannerHeight,
             width: double.infinity,
             color: Colors.grey[200],
             child: store.banner?.isNotEmpty == true
-                ? CustomImageContainer(imagePath: store.banner!, fit: BoxFit.cover)
+                ? CustomImageContainer(
+                    imagePath: store.banner!,
+                    fit: BoxFit.cover,
+                  )
                 : Container(
-              decoration: const BoxDecoration(color: AppTheme.primaryColor),
-              child: const Center(
-                child: Icon(Icons.store, size: 50, color: Colors.white70),
-              ),
-            ),
+                    decoration: const BoxDecoration(color: AppTheme.primaryColor),
+                    child: const Center(
+                      child: Icon(Icons.store, size: 50, color: Colors.white70),
+                    ),
+                  ),
           ),
         ),
-        if (store.isRecommended ?? false)
-          const PositionedDirectional(
-            top: 12,
-            start: 12,
-            child: RecommendBadge(),
-          ),
+
+        // "Open Now" / "Closed" pill — top-left overlay.
         PositionedDirectional(
+          top: 12,
           start: 16,
-          bottom: -60,
           child: Container(
-            width: isTablet(context) ? 120 : 90,
-            height: isTablet(context) ? 120 : 90,
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
               color: Colors.white,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-            child: ClipOval(
-              child: store.logo?.isNotEmpty == true
-                  ? CustomImageContainer(imagePath: store.logo!, fit: BoxFit.cover)
-                  : Container(
-                color: Colors.blue.shade50,
-                child: const Icon(Icons.store, size: 28, color: AppTheme.primaryColor),
-              ),
-            ),
-          ),
-        ),
-        PositionedDirectional(
-          end: 12,
-          bottom: -40,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.onPrimary,
               borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.10),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(AppTheme.ratingStarIconFilled, size: 16, color: AppTheme.ratingStarColor),
-                const SizedBox(width: 4),
-                Text('$rating/5 ($totalStoreFeedback)', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: isOpen ? Colors.green : Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  isOpen ? 'Open Now' : 'Closed',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFF1F1F1F),
+                  ),
+                ),
               ],
             ),
+          ),
+        ),
+
+        if (store.isRecommended ?? false)
+          const PositionedDirectional(
+            top: 12,
+            end: 16,
+            child: RecommendBadge(),
+          ),
+
+        // Floating info card overlapping the bottom of the banner.
+        Positioned(
+          left: 12,
+          right: 12,
+          bottom: -56,
+          child: _buildStoreInfoCard(
+            store,
+            doubleRating,
+            totalStoreFeedback,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStoreInfo(StoreData store, double distance) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-      child: Column(
+  Widget _buildStoreInfoCard(
+    StoreData store,
+    double rating,
+    int totalStoreFeedback,
+  ) {
+    final int? storeId = store.id;
+    final int productCount = store.productCount ?? 0;
+    final String productCountLabel =
+        productCount >= 120 ? '120+ Products' : '$productCount Products';
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(store.name ?? "Unknown Store",
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Icon(Icons.location_on_outlined, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 4),
-              Expanded(child: Text(store.address ?? "No address", style: TextStyle(fontSize: 13, color: Colors.grey[600]))),
-              const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(12)),
-                child: Text('${distance.toStringAsFixed(1)} km',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.green.shade700)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              Icon(Icons.access_time_rounded, size: 16, color: Colors.grey[600]),
-              const SizedBox(width: 4),
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: store.status?.isOpen == true ? 'Open Now' : 'Closed',
-                        style: TextStyle(fontSize: 13, color: store.status?.isOpen == true ? Colors.green : Colors.red),
+          // Logo
+          Container(
+            width: 64,
+            height: 64,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              border: Border.all(color: const Color(0xFFEFEFEF), width: 1),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipOval(
+              child: store.logo?.isNotEmpty == true
+                  ? CustomImageContainer(
+                      imagePath: store.logo!,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(
+                      color: Colors.blue.shade50,
+                      child: const Icon(
+                        Icons.store,
+                        size: 28,
+                        color: AppTheme.primaryColor,
                       ),
-                      if (store.timing != null && store.timing!.isNotEmpty)
-                        TextSpan(text: ' · ${store.timing}', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
-                    ],
+                    ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Name + meta
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  store.name ?? 'Unknown Store',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1F1F1F),
+                    height: 1.2,
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                if ((store.address ?? '').isNotEmpty)
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 13,
+                        color: Color(0xFF7A7A7A),
+                      ),
+                      const SizedBox(width: 2),
+                      Expanded(
+                        child: Text(
+                          store.address!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11.5,
+                            color: Color(0xFF7A7A7A),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 5),
+                Row(
+                  children: [
+                    const Icon(
+                      AppTheme.ratingStarIconFilled,
+                      size: 14,
+                      color: AppTheme.ratingStarColor,
+                    ),
+                    const SizedBox(width: 3),
+                    Text(
+                      '${rating.toStringAsFixed(1)} ($totalStoreFeedback Reviews)',
+                      style: const TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1F1F1F),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      width: 1,
+                      height: 12,
+                      color: const Color(0xFFE0E0E0),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      Icons.shopping_bag_outlined,
+                      size: 13,
+                      color: Colors.grey[600],
+                    ),
+                    const SizedBox(width: 3),
+                    Flexible(
+                      child: Text(
+                        productCountLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1F1F1F),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 6),
+          const SizedBox(width: 8),
+          // Follow button — white pill with heart, mirroring the mockup.
+          if (storeId != null)
+            _MockupFollowButton(
+              storeId: storeId,
+              fallbackIsFollowed: store.isFollowed ?? false,
+              fallbackFollowersCount: store.followersCount ?? 0,
+            ),
         ],
+      ),
+    );
+  }
+
+  /// Row of 3 pill-shaped action buttons: Directions, Share, Call.
+  /// Lives below the floating info card.
+  Widget _buildActionButtonsRow(StoreData store) {
+    final String? lat = store.latitude;
+    final String? lng = store.longitude;
+    final String? phone = store.contactNumber;
+    final String? slug = store.slug;
+    final String storeName = store.name ?? 'Store';
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 56, 12, 0),
+      child: Row(
+        children: [
+          Expanded(
+            child: _ActionPillButton(
+              icon: Icons.directions_outlined,
+              label: 'Directions',
+              color: AppTheme.primaryColor,
+              onTap: (lat != null && lng != null && lat.isNotEmpty && lng.isNotEmpty)
+                  ? () => _openDirections(lat, lng, storeName)
+                  : null,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _ActionPillButton(
+              icon: Icons.share_outlined,
+              label: 'Share',
+              color: AppTheme.primaryColor,
+              onTap: () => _shareStore(storeName, slug),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _ActionPillButton(
+              icon: Icons.phone_outlined,
+              label: 'Call',
+              color: AppTheme.primaryColor,
+              onTap: (phone != null && phone.isNotEmpty)
+                  ? () => _callStore(phone)
+                  : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openDirections(String lat, String lng, String label) async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng',
+    );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Future<void> _callStore(String number) async {
+    final uri = Uri(scheme: 'tel', path: number);
+    await launchUrl(uri);
+  }
+
+  Future<void> _shareStore(String storeName, String? slug) async {
+    final String shareUrl = slug != null && slug.isNotEmpty
+        ? 'https://web-aasyou.ivibetech.in/stores/$slug'
+        : 'https://web-aasyou.ivibetech.in/stores';
+    await SharePlus.instance.share(
+      ShareParams(
+        text: 'Check out $storeName on AasYou — $shareUrl',
+        subject: storeName,
       ),
     );
   }
@@ -459,12 +739,12 @@ class _NearbyStoreDetailsState extends State<_NearbyStoreDetailsView> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: isTablet(context) ? 4 : 3,
-          crossAxisSpacing: 8.w,
-          mainAxisSpacing: 8.h,
-          childAspectRatio: 0.75,
-          // +22.h to leave room for the "Recommended" chip in the card.
-          mainAxisExtent: 234.h,
+          crossAxisCount: isTablet(context) ? 3 : 2,
+          crossAxisSpacing: 12.w,
+          mainAxisSpacing: 12.h,
+          childAspectRatio: 0.74,
+          // Sized for the storeGrid card layout: image + name + price + Add button.
+          mainAxisExtent: 250.h,
         ),
         itemCount: hasReachedMax ? productData.length : productData.length + 3,
         itemBuilder: (context, index) => _buildGridItem(productData, index, hasReachedMax),
@@ -479,6 +759,7 @@ class _NearbyStoreDetailsState extends State<_NearbyStoreDetailsView> {
 
     final card = CustomProductCard(
       productId: product.id,
+      variant: ProductCardVariant.storeGrid,
       productImage: product.mainImage,
       productName: product.title,
       productSlug: product.slug,
@@ -581,6 +862,152 @@ class _NearbyStoreDetailsState extends State<_NearbyStoreDetailsView> {
       currentSortType: currentSortType,
       onSortSelected: _applySorting,
       isFromStore: true
+    );
+  }
+}
+
+/// White-pill "Follow"/"Following" button matching the mockup. Wraps the
+/// shared [StoreFollowController] toggle flow used everywhere else so the
+/// header stays in sync with every other heart on the app.
+class _MockupFollowButton extends StatelessWidget {
+  final int storeId;
+  final bool fallbackIsFollowed;
+  final int fallbackFollowersCount;
+
+  const _MockupFollowButton({
+    required this.storeId,
+    required this.fallbackIsFollowed,
+    required this.fallbackFollowersCount,
+  });
+
+  Future<void> _handleTap(BuildContext context) async {
+    if (Global.userData == null) {
+      GoRouter.of(context).push(AppRoutes.login);
+      return;
+    }
+    try {
+      await StoreFollowController.instance.toggle(storeId);
+    } on ApiException catch (e) {
+      if (context.mounted) {
+        ToastManager.show(context: context, message: e.errorMessage);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ToastManager.show(context: context, message: e.toString());
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final controller = StoreFollowController.instance;
+    return ListenableBuilder(
+      listenable: controller.listenableFor(storeId),
+      builder: (context, _) {
+        final state = controller.stateOf(storeId);
+        final bool isFollowed = state?.isFollowed ?? fallbackIsFollowed;
+        final bool isPending = state?.isPending ?? false;
+        final Color border = isFollowed
+            ? AppTheme.primaryColor
+            : const Color(0xFFE5E5E5);
+        final Color bg = isFollowed
+            ? AppTheme.primaryColor.withValues(alpha: 0.08)
+            : Colors.white;
+
+        return Material(
+          color: bg,
+          borderRadius: BorderRadius.circular(24),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(24),
+            onTap: isPending ? null : () => _handleTap(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(color: border, width: 1.2),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    isFollowed ? Icons.favorite : Icons.favorite_border,
+                    size: 16,
+                    color: AppTheme.primaryColor,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    isFollowed ? 'Following' : 'Follow',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppTheme.primaryColor,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Pill-shaped button used in the Directions / Share / Call action row.
+class _ActionPillButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback? onTap;
+
+  const _ActionPillButton({
+    required this.icon,
+    required this.label,
+    required this.color,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool enabled = onTap != null;
+    final Color tint = enabled ? color : color.withValues(alpha: 0.4);
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(28),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(28),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            border: Border.all(color: const Color(0xFFEFEFEF), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 18, color: tint),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  color: tint,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

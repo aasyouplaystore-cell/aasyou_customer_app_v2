@@ -2,7 +2,7 @@ name: aasyou
 description: "AasYou"
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 2.0.2+16
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -58,6 +58,7 @@ dependencies:
   firebase_core: ^4.4.0
   firebase_messaging: ^16.1.1
   firebase_auth: ^6.1.4
+  truecaller_sdk: ^1.2.0
   flutter_local_notifications: ^19.5.0
   google_sign_in: ^7.2.0
   connectivity_plus: ^7.0.0

@@ -24,6 +24,7 @@ class OrderRepository {
     required bool rushDelivery,
     required bool useWallet,
     required String orderNote,
+    String deliveryMode = 'delivery',
     Map<String, dynamic>? paymentDetails,
     required Map<int, List<CartItemAttachment>>? attachments,
   }) async {
@@ -47,6 +48,7 @@ class OrderRepository {
         MapEntry('rush_delivery', rushDelivery ? '1' : '0'),
         MapEntry('use_wallet', useWallet ? '1' : '0'),
         MapEntry('order_note', orderNote),
+        MapEntry('delivery_mode', deliveryMode),
         if (paymentType != 'flutterwave') MapEntry('redirect_url', AppConstant.baseUrl),
         // Add paymentDetails if needed (flatten them)
         ...?paymentDetails?.entries.map((e) => MapEntry(e.key, e.value.toString())),
@@ -295,6 +297,25 @@ class OrderRepository {
       }
       return {};
     }catch(e){
+      throw ApiException(e.toString());
+    }
+  }
+
+  Future<Map<String, dynamic>> fetchPickupOtp(String orderSlug) async {
+    try {
+      final response = await AppHelpers.apiBaseHelper.getAPICall(
+        '${ApiRoutes.orderDetailApi}$orderSlug/pickup-otp',
+        {},
+      );
+
+      if (response.statusCode == 200) {
+        final data = response.data;
+        if (data is Map<String, dynamic>) {
+          return data;
+        }
+      }
+      return <String, dynamic>{};
+    } catch (e) {
       throw ApiException(e.toString());
     }
   }

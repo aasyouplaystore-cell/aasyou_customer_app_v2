@@ -8,7 +8,8 @@ import '../../../config/helper.dart';
 enum LoginType {
   google,
   apple,
-  mobile
+  mobile,
+  truecaller,
 }
 
 Widget socialButton({
@@ -20,6 +21,10 @@ Widget socialButton({
   required Color borderColor,
   required LoginType type,
   required BuildContext context,
+  // Optional — used by the Truecaller variant which has a coloured
+  // background (blue #1B65F8) and needs white text. Defaults to the
+  // theme's normal foreground colour when null.
+  Color? textColor,
 }) {
   final l10n = AppLocalizations.of(context)!;
   String buttonText;
@@ -32,6 +37,12 @@ Widget socialButton({
       break;
     case LoginType.mobile:
       buttonText = l10n.continueWithMobile;
+      break;
+    case LoginType.truecaller:
+      // Hard-coded text — no l10n key yet for the Truecaller variant.
+      // Brand guideline: "Continue with Truecaller" (English-only is fine,
+      // matches Google's own Truecaller-button copy).
+      buttonText = 'Continue with Truecaller';
       break;
   }
 
@@ -69,7 +80,8 @@ Widget socialButton({
           Text(
             buttonText,
             style: TextStyle(
-              fontSize: isTablet(context) ? 24 : 14
+              fontSize: isTablet(context) ? 24 : 14,
+              color: textColor,
             ),
           )
         ],

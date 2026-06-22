@@ -317,6 +317,7 @@ class _MobileVerificationPageState extends State<MobileVerificationPage> {
       disableLengthCheck: true,
       cursorColor: Theme.of(context).colorScheme.tertiary,
       initialCountryCode: _initialCountryCode,
+      countries: phoneInputAllowedCountries,
       textInputAction: TextInputAction.done,
       decoration: InputDecoration(
         labelText: l10n.phoneNumber,

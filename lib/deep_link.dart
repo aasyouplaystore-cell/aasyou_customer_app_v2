@@ -95,7 +95,6 @@ class AppLinksDeepLink {
       return;
     }
 
-    debugPrint('Processing deep link URI: ${uri.toString()}');
 
     // Capture any referral code into local storage so it can be auto-applied
     // after the user completes social sign-in. This runs alongside (not

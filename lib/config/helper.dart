@@ -548,3 +548,35 @@ String? getIsoFromDialCode(String dialCode) {
     return null;
   }
 }
+
+/// The country list to feed into IntlPhoneField. When admin "Country
+/// Validation" is OFF, returns the full world list (package default).
+/// When ON, returns only the iso2-allowed subset.
+///
+/// Always non-null so the call site can pass it directly:
+///   IntlPhoneField(countries: phoneInputAllowedCountries, ...)
+List<Country> get phoneInputAllowedCountries {
+  if (!AppHelpers.countryValidationEnable) return countries;
+  final allowed = AppHelpers.allowedCountries
+      .map((c) => c.toUpperCase())
+      .toSet();
+  if (allowed.isEmpty) return countries;
+  final filtered = countries
+      .where((c) => allowed.contains(c.code.toUpperCase()))
+      .toList();
+  // If somehow nothing matched (admin saved a code the package doesn't
+  // know about), fall back to the full list so the picker isn't empty.
+  return filtered.isEmpty ? countries : filtered;
+}
+
+/// Resolved initial ISO2 country code to seed phone inputs with. If the
+/// admin's allow-list is non-empty, prefer its first entry so the picker
+/// opens on an allowed country (rather than the hardcoded 'IN' default,
+/// which might not even be in the allowed list).
+String get phoneInputInitialIso2 {
+  if (AppHelpers.countryValidationEnable) {
+    final allowed = AppHelpers.allowedCountries;
+    if (allowed.isNotEmpty) return allowed.first.toUpperCase();
+  }
+  return AppHelpers.countryCode; // 'IN'
+}

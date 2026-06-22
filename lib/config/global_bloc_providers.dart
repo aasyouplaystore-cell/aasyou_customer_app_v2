@@ -34,6 +34,7 @@ import 'package:aasyou/screens/product_listing_page/bloc/nested_category/nested_
 import 'package:aasyou/screens/product_listing_page/bloc/product_listing/product_listing_bloc.dart';
 import 'package:aasyou/screens/refer_and_earn/bloc/refer_and_earn/refer_and_earn_bloc.dart';
 import 'package:aasyou/screens/save_for_later_page/bloc/save_for_later_bloc/save_for_later_bloc.dart';
+import 'package:aasyou/screens/settings/web_settings/bloc/web_settings_bloc.dart';
 import 'package:aasyou/screens/seller_page/bloc/seller_feedback/seller_feedback_bloc.dart';
 import 'package:aasyou/screens/shopping_list_page/bloc/shopping_list_bloc/shopping_list_bloc.dart';
 import 'package:aasyou/screens/wallet_page/bloc/prepare_wallet_recharge/prepare_recharge_bloc.dart';
@@ -132,6 +133,7 @@ List<SingleChildWidget> globalBlocProviders() {
     BlocProvider<ThemeBloc>.value(value: getIt<ThemeBloc>()),
     BlocProvider<LanguageBloc>.value(value: getIt<LanguageBloc>()),
     BlocProvider<SettingsBloc>.value(value: getIt<SettingsBloc>()),
+    BlocProvider<WebSettingsBloc>.value(value: getIt<WebSettingsBloc>()),
     BlocProvider<CartStateBloc>.value(value: getIt<CartStateBloc>()),
     BlocProvider<DeviceSyncBloc>.value(value: getIt<DeviceSyncBloc>()),
     BlocProvider<CartUIBloc>.value(value: getIt<CartUIBloc>()),

@@ -74,6 +74,16 @@ android {
             shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
+        debug {
+            // Use the release signing config for debug builds too so the
+            // app's SHA-1 matches what's registered in Firebase Console +
+            // Truecaller Developer Portal. Without this, debug builds use
+            // Android's default ~/.android/debug.keystore (SHA-1 57:20:...:37:81)
+            // which is NOT registered with Firebase / Truecaller — Phone OTP
+            // verifyCredential fails with PlatformException and Truecaller
+            // isOAuthFlowUsable returns false.
+            signingConfig signingConfigs.release
+        }
     }
 
 }

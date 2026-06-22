@@ -701,6 +701,47 @@ class AppLocalizationsAr extends AppLocalizations {
   String get rushDelivery => 'توصيل سريع';
 
   @override
+  String get fulfillmentMode => 'How would you like to receive your order?';
+
+  @override
+  String get fulfillmentDelivery => 'Delivery';
+
+  @override
+  String get selfPickup => 'Self Pickup';
+
+  @override
+  String get selfPickupSubtitle => 'Collect from the store yourself';
+
+  @override
+  String get deliverySubtitle => 'Standard delivery to your address';
+
+  @override
+  String get selfPickupUnavailable =>
+      'One or more items in your cart aren\'t available for pickup';
+
+  @override
+  String get pickupCode => 'Pickup Code';
+
+  @override
+  String get pickupCodeInstructions =>
+      'Show this 4-digit code at the store counter to collect your order';
+
+  @override
+  String get pickupInstructions => 'Pickup Instructions';
+
+  @override
+  String get getDirections => 'Get Directions';
+
+  @override
+  String get pickupReadyTitle => 'Your order is ready for pickup';
+
+  @override
+  String get copyPickupCode => 'Copy code';
+
+  @override
+  String get pickupCodeCopiedToClipboard => 'Code copied';
+
+  @override
   String get prioritizedDeliveryForYourUrgentNeeds =>
       'توصيل ذو أولوية لاحتياجاتك العاجلة.';
 
@@ -2465,4 +2506,62 @@ class AppLocalizationsAr extends AppLocalizations {
   String storeCountOther(int count) {
     return '$count متاجر';
   }
+
+  @override
+  String get addressCopied => 'Address copied';
+
+  @override
+  String get copyAddress => 'Copy address';
+
+  @override
+  String get pickupAddressNotAvailable => 'Pickup address not available';
+
+  @override
+  String get pickupOtpLoading => 'Loading pickup code...';
+
+  @override
+  String get pickupOtpFetchFailed => 'Could not load pickup code';
+
+  @override
+  String get pickupCallStore => 'Call Store';
+
+  @override
+  String get pickupCallFailed => 'Unable to start call';
+
+  @override
+  String get pickupMapsFailed => 'Unable to open maps';
+
+  @override
+  String get fulfillmentSelfPickup => 'Self Pickup';
+
+  @override
+  String get fulfillmentSelfPickupSubtitle => 'Collect from the store yourself';
+
+  @override
+  String get fulfillmentSelfPickupUnavailable =>
+      'Self pickup is not available right now';
+
+  @override
+  String get fulfillmentDeliverySubtitle => 'Standard delivery to your address';
+
+  @override
+  String get pickupOtpTitle => 'Pickup Code';
+
+  @override
+  String get pickupOtpCopy => 'Copy';
+
+  @override
+  String get pickupOtpCopied => 'Code copied to clipboard';
+
+  @override
+  String get pickupAddressCopied => 'Address copied';
+
+  @override
+  String get pickupOpenMaps => 'Get Directions';
+
+  @override
+  String get store => 'Store';
+
+  @override
+  String get pickup => 'Pickup';
 }

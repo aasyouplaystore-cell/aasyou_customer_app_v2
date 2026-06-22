@@ -34,7 +34,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   }
 
   void _onAddToCart(AddToCart event, Emitter<CartState> emit) {
-    debugPrint('ADD → ${event.item.productId} ${event.item.variantId}');
     final bool isLoggedIn = Global.userData != null && Global.token!.isNotEmpty;
 
     if (isLoggedIn) {
@@ -62,7 +61,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     final bool isLoggedIn = Global.userData != null && Global.token!.isNotEmpty;
 
     for (final item in event.items) {
-      debugPrint('ADD MULTIPLE → ${item.productId} ${item.variantId}');
       if (isLoggedIn) {
         localRepo.addItem(item);
       } else {
@@ -114,8 +112,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
   void _onUpdateCartItemAddons(
       UpdateCartItemAddons event, Emitter<CartState> emit) {
-    debugPrint(
-        '🧂 UPDATE ADDONS → ${event.cartKey} (addons:${event.addons.length}, qty:${event.quantity})');
 
     final bool isLoggedIn = Global.userData != null && Global.token!.isNotEmpty;
 
@@ -147,7 +143,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   }
 
   void _onRemoveItem(RemoveFromCart event, Emitter<CartState> emit) {
-    debugPrint('🗑 REMOVE → ${event.cartKey}');
 
     final bool isLoggedIn = Global.userData != null && Global.token!.isNotEmpty;
 
@@ -175,7 +170,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   }
 
   void _onRemoveLocally(RemoveLocally event, Emitter<CartState> emit) {
-    debugPrint('🗑 REMOVE → ${event.cartKey}');
     localRepo.deleteLocally(event.cartKey);
     emit(CartLoaded(localRepo.getAllItems()));
     _debouncedSync(
@@ -184,7 +178,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   }
 
   void _onClearCart(ClearCart event, Emitter<CartState> emit) {
-    debugPrint('🧹 CLEAR CART');
     localRepo.clearLocalCart();
     emit(CartLoaded(const []));
     _debouncedSync(context: event.context);
@@ -220,20 +213,15 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     final pendingItems = localRepo.getPendingSyncItems();
 
     if (pendingItems.isEmpty) {
-      debugPrint('✅ SYNC → Nothing to sync');
       return;
     }
 
-    debugPrint('🌐 SYNC START → ${pendingItems.length} items');
 
     for (final item in pendingItems) {
       try {
-        debugPrint(
-            '🔄 Processing sync for ${item.cartKey} | Action: ${item.syncAction} | ServerID: ${item.serverCartItemId}');
 
         switch (item.syncAction) {
           case CartSyncAction.add:
-            debugPrint('🌐 ADD API → ${item.cartKey}');
             final List<Map<String, int>>? addonsPayload = item.addons.isEmpty
                 ? null
                 : item.addons.map((a) => a.toPayloadJson()).toList();
@@ -264,11 +252,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
                     serverCartItemId: serverCartItemId,
                   );
 
-                  debugPrint(
-                      '✅ ADD synced locally with serverCartItemId: $serverCartItemId');
                 } else {
-                  debugPrint(
-                      '⚠️ Could not find matching item in server response');
                 }
               }
             } else {
@@ -289,24 +273,16 @@ class CartBloc extends Bloc<CartEvent, CartState> {
             final freshItem = localRepo.getItemByKey(item.cartKey);
             log('OFIEFBN');
             if (freshItem == null) {
-              debugPrint(
-                  '❌ Item disappeared from local storage: ${item.cartKey}');
               break;
             }
 
             if (freshItem.serverCartItemId == null) {
-              debugPrint('❌ No serverCartItemId yet for ${item.cartKey}');
-              debugPrint('   Current syncAction: ${freshItem.syncAction}');
-              debugPrint('   Quantity: ${freshItem.quantity}');
-              debugPrint('   Will retry on next sync');
               break;
             }
 
             final List<Map<String, int>> freshAddonsPayload =
                 freshItem.addons.map((a) => a.toPayloadJson()).toList();
 
-            debugPrint(
-                '🌐 UPDATE API → ${item.cartKey} (qty: ${freshItem.quantity}, serverCartItemId: ${freshItem.serverCartItemId}, addons: ${freshAddonsPayload.length})');
 
             try {
               await remoteRepo.updateItemQuantity(
@@ -316,23 +292,18 @@ class CartBloc extends Bloc<CartEvent, CartState> {
               );
 
               localRepo.markSynced(item.cartKey);
-              debugPrint(
-                  '✅ UPDATE successful → qty: ${freshItem.quantity}, serverId: ${freshItem.serverCartItemId}, addons: ${freshAddonsPayload.length}');
             } catch (e) {
               debugPrint('❌ UPDATE API failed → $e');
             }
             break;
 
           case CartSyncAction.delete:
-            debugPrint(
-                '🌐 DELETE API → ${item.cartKey} (serverCartItemId: ${item.serverCartItemId})');
 
             if (item.serverCartItemId != null) {
               try {
                 await remoteRepo.removeItemFromCart(
                   cartItemId: item.serverCartItemId!,
                 );
-                debugPrint('✅ DELETE API successful → ${item.cartKey}');
               } catch (e) {
                 debugPrint('❌ DELETE API failed → $e');
                 // Still remove locally even if API fails (optional: you can retry instead)
@@ -341,7 +312,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
             // Remove from local storage after server sync
             localRepo.removeLocal(item.cartKey);
-            debugPrint('✅ Removed locally → ${item.cartKey}');
             break;
 
           case CartSyncAction.none:
@@ -355,7 +325,6 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       }
     }
 
-    debugPrint('✅ SYNC COMPLETE');
     emit(CartLoaded(localRepo.getAllItems()));
 
     if (event.isFromCartPage == true) {

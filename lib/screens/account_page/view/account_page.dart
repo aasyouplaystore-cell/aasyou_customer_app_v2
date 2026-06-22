@@ -269,6 +269,16 @@ class _AccountPageState extends State<AccountPage> {
                       SectionCard(
                         child: Column(
                           children: [
+                            // Categories — moved here from the bottom nav so
+                            // the Markets tab can take its slot.
+                            SettingsTile(
+                              title: l10n?.categories ?? "Categories",
+                              icon: HeroiconsOutline.squares2x2,
+                              onTap: () {
+                                GoRouter.of(context).push(AppRoutes.categories);
+                              },
+                            ),
+                            customDivider(),
                             SettingsTile(
                               title: l10n?.shoppingList ?? "Shopping List",
                               icon: TablerIcons.pencil,

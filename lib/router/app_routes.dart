@@ -327,14 +327,17 @@ class MyAppRoute {
                   ),
                 ),
               ]),
+              // Bottom-nav slot #2: "Markets" — was the dedicated Categories
+              // list page; per UX update Categories has been moved into the
+              // Account section, and this slot now opens the Market
+              // Categories list (one tap closer to the marketplace concept).
               StatefulShellBranch(routes: [
                 GoRoute(
-                  name: 'category-list-page',
-                  path: AppRoutes.categories,
-                  pageBuilder: (context, state) =>
-                      platformPage(
-                        const CategoryListPage(),
-                      ),
+                  name: 'market-category-list-page-shell',
+                  path: AppRoutes.marketCategoryListPage,
+                  pageBuilder: (context, state) => platformPage(
+                    const MarketCategoryListPage(),
+                  ),
                 ),
               ]),
 
@@ -656,11 +659,15 @@ class MyAppRoute {
         GoRoute(
           name: 'search',
           path: AppRoutes.search,
-          pageBuilder: (context, state) => platformPage(
-              const SearchPage(),
-              context: context,
-              state: state
-          ),
+          pageBuilder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>? ?? {};
+            final startVoice = extra['startVoice'] as bool? ?? false;
+            return platformPage(
+                SearchPage(startVoice: startVoice),
+                context: context,
+                state: state
+            );
+          },
         ),
         GoRoute(
           name: 'wishlist-product',
@@ -874,16 +881,16 @@ class MyAppRoute {
             );
           },
         ),
+        // Top-level Categories route — pushable from the Account page after
+        // Categories was removed from the bottom nav.
         GoRoute(
-          name: 'market-category-list-page',
-          path: AppRoutes.marketCategoryListPage,
-          pageBuilder: (context, state) {
-            return platformPage(
-                const MarketCategoryListPage(),
-                context: context,
-                state: state,
-            );
-          },
+          name: 'category-list-page',
+          path: AppRoutes.categories,
+          pageBuilder: (context, state) => platformPage(
+            const CategoryListPage(),
+            context: context,
+            state: state,
+          ),
         ),
         GoRoute(
           name: 'market-category-detail-page',

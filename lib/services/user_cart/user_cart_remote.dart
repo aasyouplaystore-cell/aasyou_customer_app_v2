@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:aasyou/config/api_routes.dart';
 
 import '../../config/helper.dart';
@@ -11,8 +10,6 @@ class CartRemoteRepository {
     required bool replaceQty,
     List<Map<String, int>>? addons,
   }) async {
-    debugPrint(
-        '[API] ADD → variant:$productVariantId store:$storeId qty:$quantity addons:${addons?.length ?? 0}');
 
     final Map<String, dynamic> body = {
       'product_variant_id': productVariantId,
@@ -38,8 +35,6 @@ class CartRemoteRepository {
     required int quantity,
     List<Map<String, int>>? addons,
   }) async {
-    debugPrint(
-        '[API] UPDATE → cartItemId:$cartItemId qty:$quantity addons:${addons?.length ?? 0}');
 
     final Map<String, dynamic> body = {'quantity': quantity};
 
@@ -56,7 +51,6 @@ class CartRemoteRepository {
   Future<void> removeItemFromCart({
     required int cartItemId,
   }) async {
-    debugPrint('[API] DELETE → cartItemId:$cartItemId');
 
     await AppHelpers.apiBaseHelper.deleteAPICall(
       ApiRoutes.removeItemFromCartApi + cartItemId.toString(),

@@ -11,13 +11,18 @@ import 'package:aasyou/screens/home_page/model/featured_section_product_model.da
 import 'package:aasyou/screens/home_page/widgets/banner_slider.dart';
 import 'package:aasyou/screens/home_page/widgets/brands_widget.dart';
 import 'package:aasyou/screens/home_page/widgets/sub_category_feature_section_widget.dart';
+import 'package:aasyou/screens/settings/web_settings/model/web_settings_model.dart';
 import 'package:aasyou/utils/widgets/custom_shimmer.dart';
 import 'package:aasyou/utils/widgets/empty_states_page.dart';
+import 'package:aasyou/utils/widgets/web_settings_gate.dart';
 
-import 'home_browse_stores_section.dart';
-import 'home_featured_section.dart';
+import 'home_featured_products_section.dart';
+import 'home_mango_mania_section.dart';
 import 'home_market_categories_section.dart';
+import 'home_markets_near_you_section.dart';
 import 'home_middle_banner_section.dart';
+import 'home_popular_shops_section.dart';
+import 'home_top_rated_section.dart';
 
 class HomeTabContentSection extends StatelessWidget {
   final String brandsSectionTitle;
@@ -57,42 +62,109 @@ class HomeTabContentSection extends StatelessWidget {
                     if (zoneUnavailable) {
                       return NoDeliveryLocationPage(onRetry: onRetry);
                     }
+                    // success=true but the chosen category has no shops in
+                    // the user's zone → show a category-specific empty
+                    // state, NOT the global "we're not here yet" zone screen.
+                    final categoryHasNoStores = featureSectionState
+                            is FeatureSectionProductLoaded &&
+                        featureSectionState.featureSectionProductData.isEmpty;
+                    if (categoryHasNoStores) {
+                      return NoStorePage(onRetry: onRetry);
+                    }
+                    // Visual rhythm: ~20px of breathing room between each
+                    // major home section (designer mockup). Defined once
+                    // here so the spacing stays consistent if sections are
+                    // added/removed.
+                    const SliverToBoxAdapter sectionGap = SliverToBoxAdapter(
+                      child: SizedBox(height: 20),
+                    );
                     return CustomScrollView(
                       clipBehavior: Clip.antiAlias,
                       physics: const AlwaysScrollableScrollPhysics(),
                       slivers: [
-                        // 1. Top Banner
+                        // White breathing room between the orange-gradient
+                        // header and the first banner — matches the designer
+                        // mockup where the orange fades smoothly into white
+                        // before content begins.
+                        const SliverToBoxAdapter(
+                          child: SizedBox(height: 18),
+                        ),
+                        // 1. Top Banner (AutoPlayCarouselSlider, restyled in
+                        //    Phase C/C4).
                         SliverToBoxAdapter(
                           child: _buildTopBanner(bannerState),
                         ),
-                        // 2. Market Categories
+                        sectionGap,
+                        // 2. Market Categories (restyled card from B2).
                         const SliverToBoxAdapter(
                           child: HomeMarketCategoriesSection(),
                         ),
-                        // 3. Browse Stores
+                        sectionGap,
+                        // 3. Markets Near You (D1) - replaces the legacy
+                        //    HomeBrowseStoresSection's "markets" role; renders
+                        //    market-themed cards with open/closed + distance.
                         const SliverToBoxAdapter(
-                          child: HomeBrowseStoresSection(),
+                          child: HomeMarketsNearYouSection(),
                         ),
-                        // 4. Carousel / Middle Banner
+                        sectionGap,
+                        // 4. Popular Shops - replaces the legacy
+                        //    HomeBrowseStoresSection. Uses the new
+                        //    PopularShopCard (lib/utils/widgets/
+                        //    popular_shop_card.dart) inside a horizontal
+                        //    ListView with a "See All" link.
+                        const SliverToBoxAdapter(
+                          child: HomePopularShopsSection(),
+                        ),
+                        sectionGap,
+                        // 5. Middle Banner (same AutoPlayCarouselSlider as #1).
                         const SliverToBoxAdapter(
                           child: HomeMiddleBannerSection(),
                         ),
-                        // 5. Featured Brands
+                        sectionGap,
+                        // 6. Featured Brands - gated by
+                        //    `homeFeaturedBrandsSection`.
                         SliverToBoxAdapter(
-                          child: BrandsSection(
-                            brandsSectionTitle: brandsSectionTitle,
-                            categorySlug: categorySlug,
+                          child: WebSettingsGate(
+                            flagKey: WebSettings.kHomeFeaturedBrandsSection,
+                            child: BrandsSection(
+                              brandsSectionTitle: brandsSectionTitle,
+                              categorySlug: categorySlug,
+                            ),
                           ),
                         ),
-                        // 6. Shop By Category
+                        sectionGap,
+                        // 7. Shop By Category - gated by
+                        //    `homeShopByCategorySection`.
                         const SliverToBoxAdapter(
-                          child: SubCategoryFeatureSectionWidget(),
+                          child: WebSettingsGate(
+                            flagKey: WebSettings.kHomeShopByCategorySection,
+                            child: SubCategoryFeatureSectionWidget(),
+                          ),
                         ),
-                        // 7. Rest of Home Featured Section
-                        SliverToBoxAdapter(
-                          child: HomeFeaturedSection(
-                            buildFeatureSection: buildFeatureSection,
-                            loadingPlaceholder: loadingPlaceholder,
+                        sectionGap,
+                        // 8. Mango Mania (D2) - gated by `homeFeaturedSection`.
+                        const SliverToBoxAdapter(
+                          child: WebSettingsGate(
+                            flagKey: WebSettings.kHomeFeaturedSection,
+                            child: HomeMangoManiaSection(),
+                          ),
+                        ),
+                        sectionGap,
+                        // 9. Featured Products (C2) - gated by
+                        //    `homeFeaturedProductsSection`.
+                        const SliverToBoxAdapter(
+                          child: WebSettingsGate(
+                            flagKey: WebSettings.kHomeFeaturedProductsSection,
+                            child: HomeFeaturedProductsSection(),
+                          ),
+                        ),
+                        sectionGap,
+                        // 10. Top Rated (C2) - gated by
+                        //     `homeTopRatedSection`.
+                        const SliverToBoxAdapter(
+                          child: WebSettingsGate(
+                            flagKey: WebSettings.kHomeTopRatedSection,
+                            child: HomeTopRatedSection(),
                           ),
                         ),
                         const SliverToBoxAdapter(

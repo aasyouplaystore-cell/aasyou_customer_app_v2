@@ -1426,6 +1426,84 @@ abstract class AppLocalizations {
   /// **'Rush Delivery'**
   String get rushDelivery;
 
+  /// No description provided for @fulfillmentMode.
+  ///
+  /// In en, this message translates to:
+  /// **'How would you like to receive your order?'**
+  String get fulfillmentMode;
+
+  /// No description provided for @fulfillmentDelivery.
+  ///
+  /// In en, this message translates to:
+  /// **'Delivery'**
+  String get fulfillmentDelivery;
+
+  /// No description provided for @selfPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Self Pickup'**
+  String get selfPickup;
+
+  /// No description provided for @selfPickupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect from the store yourself'**
+  String get selfPickupSubtitle;
+
+  /// No description provided for @deliverySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard delivery to your address'**
+  String get deliverySubtitle;
+
+  /// No description provided for @selfPickupUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'One or more items in your cart aren\'t available for pickup'**
+  String get selfPickupUnavailable;
+
+  /// No description provided for @pickupCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup Code'**
+  String get pickupCode;
+
+  /// No description provided for @pickupCodeInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Show this 4-digit code at the store counter to collect your order'**
+  String get pickupCodeInstructions;
+
+  /// No description provided for @pickupInstructions.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup Instructions'**
+  String get pickupInstructions;
+
+  /// No description provided for @getDirections.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Directions'**
+  String get getDirections;
+
+  /// No description provided for @pickupReadyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your order is ready for pickup'**
+  String get pickupReadyTitle;
+
+  /// No description provided for @copyPickupCode.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy code'**
+  String get copyPickupCode;
+
+  /// No description provided for @pickupCodeCopiedToClipboard.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied'**
+  String get pickupCodeCopiedToClipboard;
+
   /// No description provided for @prioritizedDeliveryForYourUrgentNeeds.
   ///
   /// In en, this message translates to:
@@ -4647,6 +4725,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} stores'**
   String storeCountOther(int count);
+
+  /// No description provided for @addressCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Address copied'**
+  String get addressCopied;
+
+  /// No description provided for @copyAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy address'**
+  String get copyAddress;
+
+  /// No description provided for @pickupAddressNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup address not available'**
+  String get pickupAddressNotAvailable;
+
+  /// No description provided for @pickupOtpLoading.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading pickup code...'**
+  String get pickupOtpLoading;
+
+  /// No description provided for @pickupOtpFetchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load pickup code'**
+  String get pickupOtpFetchFailed;
+
+  /// No description provided for @pickupCallStore.
+  ///
+  /// In en, this message translates to:
+  /// **'Call Store'**
+  String get pickupCallStore;
+
+  /// No description provided for @pickupCallFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to start call'**
+  String get pickupCallFailed;
+
+  /// No description provided for @pickupMapsFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Unable to open maps'**
+  String get pickupMapsFailed;
+
+  /// No description provided for @fulfillmentSelfPickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Self Pickup'**
+  String get fulfillmentSelfPickup;
+
+  /// No description provided for @fulfillmentSelfPickupSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Collect from the store yourself'**
+  String get fulfillmentSelfPickupSubtitle;
+
+  /// No description provided for @fulfillmentSelfPickupUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Self pickup is not available right now'**
+  String get fulfillmentSelfPickupUnavailable;
+
+  /// No description provided for @fulfillmentDeliverySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Standard delivery to your address'**
+  String get fulfillmentDeliverySubtitle;
+
+  /// No description provided for @pickupOtpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup Code'**
+  String get pickupOtpTitle;
+
+  /// No description provided for @pickupOtpCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get pickupOtpCopy;
+
+  /// No description provided for @pickupOtpCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Code copied to clipboard'**
+  String get pickupOtpCopied;
+
+  /// No description provided for @pickupAddressCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Address copied'**
+  String get pickupAddressCopied;
+
+  /// No description provided for @pickupOpenMaps.
+  ///
+  /// In en, this message translates to:
+  /// **'Get Directions'**
+  String get pickupOpenMaps;
+
+  /// No description provided for @store.
+  ///
+  /// In en, this message translates to:
+  /// **'Store'**
+  String get store;
+
+  /// No description provided for @pickup.
+  ///
+  /// In en, this message translates to:
+  /// **'Pickup'**
+  String get pickup;
 }
 
 class _AppLocalizationsDelegate

@@ -3,7 +3,9 @@ import 'package:aasyou/l10n/app_localizations.dart';
 
 import '../../config/theme.dart';
 import '../../screens/near_by_stores/model/near_by_store_model.dart';
+import '../../screens/store_follow/bloc/store_follow_bloc.dart';
 import 'custom_image_container.dart';
+import 'store_follow_heart.dart';
 
 class StoreCardInMap extends StatelessWidget {
   final StoreData store;
@@ -20,6 +22,17 @@ class StoreCardInMap extends StatelessWidget {
     final double distance = store.distance ?? 0.0;
     final double rating = double.parse(store.avgStoreRating ?? '0.0');
     final int totalStoreFeedback = store.totalStoreFeedback!;
+
+    // Seed the Shop-Follow controller so the heart on this map-popup card
+    // stays in sync with every other card showing the same store.
+    final int? storeId = store.id;
+    if (storeId != null) {
+      StoreFollowController.instance.seedFromStore(
+        storeId: storeId,
+        isFollowed: store.isFollowed,
+        followersCount: store.followersCount,
+      );
+    }
 
     return GestureDetector(
       onTap: onTap,
@@ -59,6 +72,28 @@ class StoreCardInMap extends StatelessWidget {
                         : _gradientPlaceholder(),
                   ),
                 ),
+
+                // Shop-Follow heart anchored to the banner top-right.
+                if (storeId != null)
+                  PositionedDirectional(
+                    top: 6,
+                    end: 6,
+                    child: Material(
+                      color:
+                          Theme.of(context).colorScheme.surface.withValues(
+                                alpha: 0.92,
+                              ),
+                      shape: const CircleBorder(),
+                      elevation: 1,
+                      shadowColor: Colors.black.withValues(alpha: 0.18),
+                      child: StoreFollowHeart(
+                        storeId: storeId,
+                        fallbackIsFollowed: store.isFollowed ?? false,
+                        fallbackFollowersCount: store.followersCount ?? 0,
+                        iconSize: 18,
+                      ),
+                    ),
+                  ),
 
                 // Circular Logo (bottom-left)
                 PositionedDirectional(

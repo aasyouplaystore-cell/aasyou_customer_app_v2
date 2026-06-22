@@ -421,6 +421,11 @@ class OrderItems {
   final String? price;
   final String? subtotal;
   final String? status;
+  // 2026-06-16 — populated server-side when the seller rejects this line.
+  // Surfaced on the order detail screen so the customer sees WHY it was
+  // rejected instead of a bare "Rejected" status pill.
+  final String? rejectionReason;
+  final String? rejectedAt;
   final dynamic otp;
   final int? otpVerified;
   final bool? isUserReviewGiven;
@@ -465,6 +470,8 @@ class OrderItems {
     this.price,
     this.subtotal,
     this.status,
+    this.rejectionReason,
+    this.rejectedAt,
     this.otp,
     this.otpVerified,
     this.isUserReviewGiven,
@@ -506,6 +513,8 @@ class OrderItems {
       price: parseString(json['price']),
       subtotal: parseString(json['subtotal']),
       status: parseString(json['status']),
+      rejectionReason: parseString(json['rejection_reason']),
+      rejectedAt: parseString(json['rejected_at']),
       otp: json['otp'],
       otpVerified: parseInt(json['otp_verified']),
       isUserReviewGiven: parseBool(json['is_user_review_given']),
@@ -549,6 +558,8 @@ class OrderItems {
     'price': price,
     'subtotal': subtotal,
     'status': status,
+    'rejection_reason': rejectionReason,
+    'rejected_at': rejectedAt,
     'otp': otp,
     'otp_verified': otpVerified,
     'is_user_review_given': isUserReviewGiven,

@@ -1,5 +1,8 @@
 class AppConstant {
-  static String baseUrl = 'https://aasyou.ivibetech.in/api/';
+  // PROD build (2026-06-21) — self-pickup P0+P1 went live on prod
+  // seller.aasyou.com today (migrations + 3 API endpoints LIVE; verified
+  // via 401 smokes). Switched back from staging aasyou.ivibetech.in.
+  static String baseUrl = 'https://seller.aasyou.com/api/';
   static String appName = 'AasYou';
   static String packageName = 'com.aasyou.user';
   static String androidMapKey = 'AIzaSyBlMOpkwZxo731Kp5awQUeFqLjBk3_RIeU';

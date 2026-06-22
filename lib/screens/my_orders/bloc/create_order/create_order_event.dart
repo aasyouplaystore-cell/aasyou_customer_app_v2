@@ -16,6 +16,10 @@ class CreateOrderRequest extends CreateOrderEvent {
   final String? orderNote;
   final Map<String, dynamic>? paymentDetails;
   final Map<int, List<CartItemAttachment>>? attachments;
+  // Self-pickup: 'delivery' (default) or 'self_pickup'. Threaded into the
+  // create-order POST body so the backend's OrderService::createOrderFromCart
+  // can branch on fulfillment mode.
+  final String? deliveryMode;
 
   CreateOrderRequest({
     required this.paymentType,
@@ -26,7 +30,8 @@ class CreateOrderRequest extends CreateOrderEvent {
     this.useWallet,
     this.orderNote,
     this.paymentDetails,
-    this.attachments
+    this.attachments,
+    this.deliveryMode,
   });
 
   @override
@@ -40,6 +45,7 @@ class CreateOrderRequest extends CreateOrderEvent {
     useWallet,
     orderNote,
     paymentDetails,
-    attachments
+    attachments,
+    deliveryMode,
   ];
 }

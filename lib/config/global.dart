@@ -29,8 +29,6 @@ class Global {
     Box box = await Hive.openBox<UserDataModel>(_boxName);
     _userData = box.get(_userKey);
     userDataNotifier.value = _userData;
-    debugPrint('✅ Initialized UserData: $_userData');
-    debugPrint('✅ Initialized UserData: ${_userData?.email}');
   }
 
   // ---------------- App Preferences (stored separately) ----------------
@@ -44,7 +42,6 @@ class Global {
       final Box prefsBox = await Hive.openBox(_prefsBoxName);
       _isFirstTime =
           prefsBox.get(_isFirstTimeKey, defaultValue: true) as bool? ?? true;
-      debugPrint('✅ Initialized prefs: isFirstTime=$_isFirstTime');
     } catch (e) {
       debugPrint('❌ Failed to initialize prefs: $e');
       _isFirstTime = true;
@@ -59,7 +56,6 @@ class Global {
     final Box prefsBox = await Hive.openBox(_prefsBoxName);
     await prefsBox.put(_isFirstTimeKey, value);
     _isFirstTime = value;
-    debugPrint('🔖 Set isFirstTime = $value');
   }
 
   /// Save full user data
@@ -69,7 +65,6 @@ class Global {
     _userData = userData;
     token = userData.token;
     userDataNotifier.value = userData;
-    debugPrint('✅ Set UserData: $userData');
   }
 
   /// Clear user data
@@ -79,7 +74,6 @@ class Global {
     _userData = null;
     token = null;
     userDataNotifier.value = null;
-    debugPrint('🗑️ Cleared UserData');
   }
 
   /// Get current user (sync, cached)
@@ -95,7 +89,6 @@ class Global {
     if (_userData == null) return;
     final updatedUser = _userData!.copyWith(language: languageCode);
     await setUserData(updatedUser);
-    debugPrint('🌐 Updated Language: $languageCode');
   }
 
   /// Supported languages

@@ -1,6 +1,7 @@
 import 'package:animations/animations.dart';
 import 'package:aasyou/screens/product_detail_page/model/product_detail_model.dart'
     show Badge;
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart' hide Badge;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
@@ -29,6 +30,8 @@ import 'package:flutter/services.dart';
 import '../../services/user_cart/cart_validation.dart';
 import 'custom_toast.dart';
 import 'customisations_bottom_sheet.dart';
+
+enum ProductCardVariant { vertical, horizontal, storeGrid }
 
 class CustomProductCard extends StatelessWidget {
   final int productId;
@@ -61,6 +64,7 @@ class CustomProductCard extends StatelessWidget {
   final bool isSponsored;
   final VoidCallback? onCardTap;
   final Badge? badge;
+  final ProductCardVariant variant;
 
   const CustomProductCard({
     super.key,
@@ -94,6 +98,7 @@ class CustomProductCard extends StatelessWidget {
     this.isSponsored = false,
     this.onCardTap,
     this.badge,
+    this.variant = ProductCardVariant.vertical,
   });
 
   BoxFit get _boxFit {
@@ -114,6 +119,24 @@ class CustomProductCard extends StatelessWidget {
       double.tryParse(specialPrice) ?? 0,
     );
     final hasDiscount = discountPct > 0;
+
+    if (variant == ProductCardVariant.horizontal) {
+      return _buildHorizontal(
+        context: context,
+        isDim: isDim,
+        discountPct: discountPct,
+        hasDiscount: hasDiscount,
+      );
+    }
+
+    if (variant == ProductCardVariant.storeGrid) {
+      return _buildStoreGrid(
+        context: context,
+        isDim: isDim,
+        discountPct: discountPct,
+        hasDiscount: hasDiscount,
+      );
+    }
 
     return OpenContainer(
       clipBehavior: Clip.antiAlias,
@@ -824,6 +847,638 @@ class CustomProductCard extends StatelessWidget {
       }
     }
     return null;
+  }
+
+  // ── Store-grid variant (matches the in-store product mockup) ──────────────
+  //
+  // Card layout:
+  //   ┌──────────────────────────┐
+  //   │ [discount pill]    [♥]  │
+  //   │      product image       │
+  //   │                          │
+  //   │ Product name (2 lines)   │
+  //   │ ₹special  ₹regular‾      │
+  //   │ ┌─────────────────────┐ │
+  //   │ │  🛒  Add            │ │  full-width pill
+  //   │ └─────────────────────┘ │
+  //   └──────────────────────────┘
+  Widget _buildStoreGrid({
+    required BuildContext context,
+    required bool isDim,
+    required int discountPct,
+    required bool hasDiscount,
+  }) {
+    return OpenContainer(
+      clipBehavior: Clip.antiAlias,
+      transitionDuration: const Duration(milliseconds: 500),
+      transitionType: ContainerTransitionType.fade,
+      closedElevation: 1.5,
+      openElevation: 0,
+      closedShape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      openShape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      closedColor: Theme.of(context).colorScheme.surface,
+      openColor: Theme.of(context).colorScheme.surface,
+      tappable: false,
+      useRootNavigator: true,
+      closedBuilder: (context, openContainer) {
+        return InkWell(
+          borderRadius: BorderRadius.circular(14),
+          onTap: () {
+            onCardTap?.call();
+            openContainer();
+          },
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Image area with overlays
+                SizedBox(
+                  height: 110.h,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      // Image
+                      Positioned.fill(
+                        child: ColorFiltered(
+                          colorFilter: isDim
+                              ? const ColorFilter.matrix([
+                                  0.2126, 0.7152, 0.0722, 0, 0,
+                                  0.2126, 0.7152, 0.0722, 0, 0,
+                                  0.2126, 0.7152, 0.0722, 0, 0,
+                                  0,      0,      0,      1, 0,
+                                ])
+                              : const ColorFilter.mode(
+                                  Colors.transparent, BlendMode.multiply),
+                          child: productImage.isNotEmpty
+                              ? Hero(
+                                  tag: productHeroTag(productSlug),
+                                  child: CustomImageContainer(
+                                    imagePath: productImage,
+                                    fit: _boxFit,
+                                  ),
+                                )
+                              : _buildAssetImageOrPlaceholder(),
+                        ),
+                      ),
+                      // Top-left: discount pill OR out-of-stock pill
+                      if (isDim)
+                        PositionedDirectional(
+                          top: 0,
+                          start: 0,
+                          child: _storeGridStatusPill(context),
+                        )
+                      else if (hasDiscount)
+                        PositionedDirectional(
+                          top: 0,
+                          start: 0,
+                          child: _storeGridDiscountPill(context, discountPct),
+                        ),
+                      // Top-right: wishlist heart
+                      if (showWishlist)
+                        PositionedDirectional(
+                          top: -4,
+                          end: -4,
+                          child: _wishlistButton(context),
+                        ),
+                      // Sponsored chip (bottom-left)
+                      if (!isDim && isSponsored)
+                        const PositionedDirectional(
+                          bottom: 0,
+                          start: 0,
+                          child: SponsoredBadge(style: SponsoredBadgeStyle.chip),
+                        ),
+                    ],
+                  ),
+                ),
+                SizedBox(height: 10.h),
+                // Product name
+                SizedBox(
+                  height: 36.h,
+                  child: Text(
+                    productName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: AppTheme.fontFamily,
+                      color: isDim
+                          ? Theme.of(context)
+                              .colorScheme
+                              .tertiary
+                              .withValues(alpha: 0.5)
+                          : Colors.black87,
+                      height: 1.3,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                // Price row
+                _storeGridPriceRow(context, isDim, hasDiscount),
+                SizedBox(height: 8.h),
+                // Full-width Add / Stepper / OutOfStock button
+                _storeGridAddButton(context, isDim),
+              ],
+            ),
+          ),
+        );
+      },
+      openBuilder: (context, closeContainer) {
+        return ProductDetailPage(
+          productSlug: productSlug,
+          initialData: ProductInitialData(
+            title: productName,
+            mainImage: productImage,
+          ),
+          closeContainer: closeContainer,
+        );
+      },
+    );
+  }
+
+  Widget _storeGridDiscountPill(BuildContext context, int discountPct) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1FAB54),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        '$discountPct% OFF',
+        style: const TextStyle(
+          fontSize: 9.5,
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontFamily: AppTheme.fontFamily,
+          height: 1.1,
+        ),
+      ),
+    );
+  }
+
+  Widget _storeGridStatusPill(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.black87,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        isStoreOpen == false
+            ? (AppLocalizations.of(context)?.storeClosed ?? 'Closed')
+            : (AppLocalizations.of(context)?.outOfStock ?? 'Out of stock'),
+        style: const TextStyle(
+          fontSize: 9.5,
+          color: Colors.white,
+          fontWeight: FontWeight.w700,
+          fontFamily: AppTheme.fontFamily,
+          height: 1.1,
+        ),
+      ),
+    );
+  }
+
+  Widget _storeGridPriceRow(
+    BuildContext context,
+    bool isDim,
+    bool hasDiscount,
+  ) {
+    final double regular = double.tryParse(productPrice) ?? 0.0;
+    final double special = double.tryParse(specialPrice) ?? 0.0;
+    final bool showDiscount = hasDiscount && special > 0 && special < regular;
+    final Color priceColor = isDim
+        ? Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.5)
+        : Colors.black87;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          PriceUtils.formatPrice(showDiscount ? special : regular),
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.w800,
+            fontFamily: AppTheme.fontFamily,
+            color: priceColor,
+          ),
+        ),
+        if (showDiscount) ...[
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              PriceUtils.formatPrice(regular),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                fontFamily: AppTheme.fontFamily,
+                color: Colors.grey.shade500,
+                decoration: TextDecoration.lineThrough,
+                decorationColor: Colors.grey.shade500,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _storeGridAddButton(BuildContext context, bool isDim) {
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        final cartItem = _getCartItem(state);
+        final isInCart = cartItem != null;
+        final totalQtyAcrossVariants = _getTotalQuantityAcrossVariants(state);
+        final Set<int> currentStoreIds = {};
+        int currentTotalItems = 0;
+
+        if (state is CartLoaded) {
+          currentStoreIds.addAll(
+            state.items
+                .map((item) => int.tryParse(item.vendorId))
+                .where((id) => id != null)
+                .cast<int>(),
+          );
+          currentTotalItems = state.items.length;
+        }
+
+        // Out of stock state — disabled gray pill.
+        if (isDim) {
+          return Container(
+            height: 32,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade200,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              AppLocalizations.of(context)?.outOfStock ?? 'Out of Stock',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                fontFamily: AppTheme.fontFamily,
+                color: Colors.grey.shade600,
+              ),
+            ),
+          );
+        }
+
+        if (isInCart) {
+          return Container(
+            height: 32,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: InkWell(
+                    borderRadius: const BorderRadius.horizontal(
+                        left: Radius.circular(20)),
+                    onTap: () => _handleDecrement(context, cartItem),
+                    child: const Icon(
+                      Icons.remove,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                Text(
+                  '$totalQtyAcrossVariants',
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    fontFamily: AppTheme.fontFamily,
+                  ),
+                ),
+                Expanded(
+                  child: InkWell(
+                    borderRadius: const BorderRadius.horizontal(
+                        right: Radius.circular(20)),
+                    onTap: () => _handleIncrement(context, cartItem),
+                    child: const Icon(
+                      Icons.add,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        // Default "Add" — white pill, orange border + icon + text.
+        return Material(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: totalStocks > 0
+                ? () async {
+                    await HapticFeedback.lightImpact();
+                    if (!context.mounted) return;
+                    final error = CartValidation.validateProductAddToCart(
+                      context: context,
+                      requestedQuantity: quantityStepSize,
+                      minQty: minQty,
+                      maxQty: totalAllowedQuantity,
+                      stock: totalStocks,
+                      isStoreOpen: isStoreOpen,
+                    );
+                    final cartError = CartValidation.validateBeforeAddToCart(
+                      context: context,
+                      currentCartItemCount: currentTotalItems,
+                      requestedAddQuantity: quantityStepSize,
+                      currentStoreIdsInCart: currentStoreIds,
+                      thisProductStoreId: storeId,
+                    );
+                    if (error != null || cartError != null) {
+                      ToastManager.show(
+                        context: context,
+                        message: cartError ?? error!,
+                        type: ToastType.error,
+                      );
+                    } else {
+                      onAddToCart();
+                    }
+                  }
+                : null,
+            child: Container(
+              height: 32,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: AppTheme.primaryColor,
+                  width: 1.5,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.primaryColor.withValues(alpha: 0.10),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 15,
+                    color: AppTheme.primaryColor,
+                  ),
+                  SizedBox(width: 6),
+                  Text(
+                    'Add',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      color: AppTheme.primaryColor,
+                      fontFamily: AppTheme.fontFamily,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Horizontal variant ────────────────────────────────────────────────────
+
+  Widget _buildHorizontal({
+    required BuildContext context,
+    required bool isDim,
+    required int discountPct,
+    required bool hasDiscount,
+  }) {
+    final double imgSize = isTablet(context) ? 112 : 96;
+
+    return OpenContainer(
+      clipBehavior: Clip.antiAlias,
+      transitionDuration: const Duration(milliseconds: 500),
+      transitionType: ContainerTransitionType.fade,
+      closedElevation: 1,
+      openElevation: 0,
+      closedShape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      openShape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      closedColor: Theme.of(context).colorScheme.surface,
+      openColor: Theme.of(context).colorScheme.surface,
+      tappable: false,
+      useRootNavigator: true,
+      closedBuilder: (context, openContainer) {
+        return InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            onCardTap?.call();
+            openContainer();
+          },
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ClipRRect(
+                  borderRadius: const BorderRadiusDirectional.only(
+                    topStart: Radius.circular(16),
+                    bottomStart: Radius.circular(16),
+                  ).resolve(Directionality.of(context)),
+                  child: SizedBox(
+                    width: imgSize,
+                    height: imgSize,
+                    child: productImage.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: productImage,
+                            fit: BoxFit.cover,
+                            placeholder: (_, __) => Container(
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHigh,
+                            ),
+                            errorWidget: (_, __, ___) =>
+                                _buildAssetImageOrPlaceholder(),
+                          )
+                        : _buildAssetImageOrPlaceholder(),
+                  ),
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          productName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: AppTheme.fontFamily,
+                          ),
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            _horizontalPriceRow(context, hasDiscount),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                if (hasDiscount)
+                                  Text(
+                                    '$discountPct% OFF',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      fontFamily: AppTheme.fontFamily,
+                                      color: Colors.green.shade600,
+                                    ),
+                                  ),
+                                const Spacer(),
+                                _horizontalAddButton(context),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+      openBuilder: (context, closeContainer) {
+        return ProductDetailPage(
+          productSlug: productSlug,
+          initialData: ProductInitialData(
+            title: productName,
+            mainImage: productImage,
+          ),
+          closeContainer: closeContainer,
+        );
+      },
+    );
+  }
+
+  Widget _horizontalPriceRow(BuildContext context, bool hasDiscount) {
+    final double regular = double.tryParse(productPrice) ?? 0.0;
+    final double special = double.tryParse(specialPrice) ?? 0.0;
+    final double current = hasDiscount ? special : regular;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Flexible(
+          child: Text(
+            PriceUtils.formatPrice(current),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              fontFamily: AppTheme.fontFamily,
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (hasDiscount) ...[
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              PriceUtils.formatPrice(regular),
+              style: TextStyle(
+                fontSize: 12,
+                fontFamily: AppTheme.fontFamily,
+                color: Colors.grey.shade600,
+                decoration: TextDecoration.lineThrough,
+                decorationColor: Colors.grey.shade600,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _horizontalAddButton(BuildContext context) {
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, state) {
+        final Set<int> currentStoreIds = {};
+        int currentTotalItems = 0;
+        if (state is CartLoaded) {
+          currentStoreIds.addAll(
+            state.items
+                .map((item) => int.tryParse(item.vendorId))
+                .where((id) => id != null)
+                .cast<int>(),
+          );
+          currentTotalItems = state.items.length;
+        }
+
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: totalStocks > 0 && isStoreOpen
+                ? () async {
+                    await HapticFeedback.lightImpact();
+                    if (!context.mounted) return;
+                    final error = CartValidation.validateProductAddToCart(
+                      context: context,
+                      requestedQuantity: quantityStepSize,
+                      minQty: minQty,
+                      maxQty: totalAllowedQuantity,
+                      stock: totalStocks,
+                      isStoreOpen: isStoreOpen,
+                    );
+                    final cartError = CartValidation.validateBeforeAddToCart(
+                      context: context,
+                      currentCartItemCount: currentTotalItems,
+                      requestedAddQuantity: quantityStepSize,
+                      currentStoreIdsInCart: currentStoreIds,
+                      thisProductStoreId: storeId,
+                    );
+                    if (error != null || cartError != null) {
+                      ToastManager.show(
+                        context: context,
+                        message: cartError ?? error!,
+                        type: ToastType.error,
+                      );
+                    } else {
+                      onAddToCart();
+                    }
+                  }
+                : null,
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                Icons.add,
+                size: 18,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildAssetImageOrPlaceholder() {

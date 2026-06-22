@@ -10,6 +10,7 @@ class ApiRoutes {
   static String googleAuthApi = '${AppConstant.baseUrl}auth/google/callback';
   static String appleAuthApi = '${AppConstant.baseUrl}auth/apple/callback';
   static String mobileOtpAuthApi = '${AppConstant.baseUrl}auth/phone/callback';
+  static String truecallerAuthApi = '${AppConstant.baseUrl}auth/truecaller/callback';
   static String logoutApi = '${AppConstant.baseUrl}logout';
   static String categoryApi = '${AppConstant.baseUrl}categories';
   static String filterCategoryApi = '${AppConstant.baseUrl}categories/sidebar';
@@ -134,4 +135,12 @@ class ApiRoutes {
   static String adBulkClicksApi = '${AppConstant.baseUrl}ads/bulk-clicks';
   static String syncDeviceApi = '${AppConstant.baseUrl}devices/sync';
   static String applyReferralApi = '${AppConstant.baseUrl}user/referral/submit';
+
+  // Shop-Follow endpoints (sanctum-protected).
+  //  - POST/DELETE /api/stores/{id}/follow  → toggle follow for current user
+  //  - GET         /api/user/followed-stores → list current user's follows
+  static String followStoreApi(int storeId) =>
+      '${AppConstant.baseUrl}stores/$storeId/follow';
+  static String followedStoresApi =
+      '${AppConstant.baseUrl}user/followed-stores';
 }

@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import '../../../../config/payment_config.dart';
 import '../../../address_list_page/model/get_address_list_model.dart';
 import '../../widgets/delivery_type_widget.dart';
+import 'cart_ui_state.dart' show FulfillmentMode;
 
 abstract class CartUIEvent extends Equatable {
   @override
@@ -22,6 +23,14 @@ class SetDeliveryType extends CartUIEvent {
 
   @override
   List<Object?> get props => [type];
+}
+
+class SetFulfillmentMode extends CartUIEvent {
+  final FulfillmentMode mode;
+  SetFulfillmentMode(this.mode);
+
+  @override
+  List<Object?> get props => [mode];
 }
 
 class SetWalletUsage extends CartUIEvent {

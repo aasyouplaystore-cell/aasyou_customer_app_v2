@@ -71,6 +71,8 @@ import '../screens/notification_page/bloc/notification_bloc.dart';
 import '../screens/order__transaction/bloc/order_transactions/order_transactions_bloc.dart';
 import '../screens/payment_options/repo/payment_repository.dart';
 import '../screens/refer_and_earn/bloc/refer_and_earn/refer_and_earn_bloc.dart';
+import '../screens/settings/web_settings/bloc/web_settings_bloc.dart';
+import '../screens/settings/web_settings/bloc/web_settings_event.dart';
 import '../screens/user_profile/bloc/user_profile_bloc/user_profile_bloc.dart';
 import '../screens/wallet_page/bloc/wallect_transactions/wallet_transactions_bloc.dart';
 import '../screens/wishlist_page/bloc/get_user_wishlist_bloc/get_user_wishlist_bloc.dart';
@@ -103,6 +105,8 @@ void setupLocator() {
   getIt.registerLazySingleton(() => ThemeBloc());
   getIt.registerLazySingleton(() => LanguageBloc()..add(const LoadLanguage()));
   getIt.registerLazySingleton(() => SettingsBloc());
+  getIt.registerLazySingleton(
+      () => WebSettingsBloc()..add(WebSettingsRequested()));
   getIt.registerLazySingleton(() => CartStateBloc());
   getIt.registerLazySingleton(() => DeviceSyncBloc());
   getIt.registerLazySingleton(() => CartUIBloc());

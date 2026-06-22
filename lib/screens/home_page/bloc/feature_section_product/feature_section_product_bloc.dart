@@ -61,20 +61,21 @@ class FeatureSectionProductBloc extends Bloc<FeatureSectionProductEvent, Feature
       final currentTotal = int.parse(response['data']['current_page'].toString());
       final lastPageNum = int.parse(response['data']['last_page'].toString());
       hasReachedMax = currentTotal >= lastPageNum || featureSectionProductData.length < perPage;
-      if(response['success'] != null && featureSectionProductData.isNotEmpty){
-        if(response['success'] == true){
-          emit(FeatureSectionProductLoaded(
-            featureSectionProductData: featureSectionProductData,
-            message: response['message'],
-            hasReachedMax: hasReachedMax
-          ));
-          isRefresh = true;
-        } else if (response['success'] == false){
-          emit(FeatureSectionProductFailed(error: response['message']));
-          isRefresh = true;
-        }
+      // `success=true` means the API reached a delivery zone for the user.
+      // The result list can still be empty (zone has no shops in this category).
+      // We treat that as a LOADED state with empty data so the UI can show
+      // the right "no stores in this category" message — not the
+      // "we're not here yet" out-of-zone screen.
+      if (response['success'] == true) {
+        emit(FeatureSectionProductLoaded(
+          featureSectionProductData: featureSectionProductData,
+          message: response['message'] ?? '',
+          hasReachedMax: hasReachedMax,
+        ));
+        isRefresh = true;
       } else {
-        emit(FeatureSectionProductFailed(error: response['message']));
+        // success=false → genuine zone-unavailable response from /featured-sections.
+        emit(FeatureSectionProductFailed(error: response['message'] ?? ''));
         isRefresh = true;
       }
 

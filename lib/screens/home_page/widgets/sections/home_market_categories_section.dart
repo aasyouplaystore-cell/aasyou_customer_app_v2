@@ -32,13 +32,14 @@ class HomeMarketCategoriesSection extends StatelessWidget {
   static const int _skeletonCount = 8;
 
   /// Card width for the horizontal scroller — tuned so the card's 4/5 aspect
-  /// produces a ~150-170 high tile on phones and scales gracefully on tablets.
+  /// produces a ~190 high tile on phones (enough room for two-line titles
+  /// like "Building Materials") and scales gracefully on tablets.
   double _cardWidth(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    if (screenWidth >= 1200) return 130;
-    if (screenWidth >= 800) return 120;
-    if (screenWidth >= 600) return 110;
-    return 105;
+    if (screenWidth >= 1200) return 170;
+    if (screenWidth >= 800) return 160;
+    if (screenWidth >= 600) return 155;
+    return 150;
   }
 
   @override

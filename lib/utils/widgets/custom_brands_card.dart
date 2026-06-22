@@ -1,33 +1,50 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:aasyou/config/helper.dart';
 import 'package:aasyou/utils/widgets/custom_image_container.dart';
 
+/// Flat, edge-to-edge brand card.
+///
+/// Phase B (B4) restyle:
+///  - No outer padding
+///  - 12dp rounded ClipRRect on the outer surface
+///  - Logo fills the entire card with BoxFit.cover
+///  - Fixed size: 64x64 phone / 80x80 tablet
+///  - InkWell tap ripple (caller wires routing via [onTap])
+///  - Brand name text intentionally removed — logo speaks for itself.
 class CustomBrandsCard extends StatelessWidget {
   final String brandName;
   final String brandImage;
-  const CustomBrandsCard({super.key, required this.brandName, required this.brandImage});
+  final VoidCallback? onTap;
+
+  const CustomBrandsCard({
+    super.key,
+    required this.brandName,
+    required this.brandImage,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: isTablet(context) ? 65.w : 100.w,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border.all(
-            color: Colors.grey.withValues(alpha: 0.2), width: 1, style: BorderStyle.solid),
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: [
-          BoxShadow(
-            color: Theme.of(context).colorScheme.tertiary.withValues(alpha: 0.1),
-            blurRadius: 0.5,
-            spreadRadius: 0
-          )
-        ]
-      ),
-      padding: const EdgeInsets.all(10),
+    final double size = isTablet(context) ? 80 : 64;
 
-      child: CustomImageContainer(imagePath: brandImage, fit: BoxFit.contain,)
+    return SizedBox(
+      width: size,
+      height: size,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Material(
+          color: Theme.of(context).colorScheme.surface,
+          child: InkWell(
+            onTap: onTap,
+            child: CustomImageContainer(
+              imagePath: brandImage,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

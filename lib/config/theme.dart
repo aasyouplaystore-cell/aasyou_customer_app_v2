@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 class AppTheme {
-  /// App main color
-  static const Color primaryColor = Color(0xFFC2410C);
+  /// App main color — designer mockup uses the brighter saturated orange
+  /// (#FF6A1F) as the visible brand. The deeper rust (#C2410C) is kept
+  /// only for hover/pressed semantic states below.
+  static const Color primaryColor = Color(0xFFFF6A1F);
   static Color primaryVariant = primaryColor.withValues(alpha: 0.8);
 
   /// Brand palette tokens

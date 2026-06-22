@@ -35,14 +35,10 @@ class CartLocalRepository {
         pending.add(item);
       }
     }
-    debugPrint('[LOCAL] Pending sync items: ${pending.length}');
     return pending;
   }
 
   void addItem(UserCart item) {
-    debugPrint(
-        '[LOCAL] ADD → ${item.productId}-${item.variantId} qty:${item
-            .quantity}');
     box.put(
       item.cartKey,
       item.copyWith(
@@ -54,12 +50,9 @@ class CartLocalRepository {
   void updateQuantity(String cartKey, int quantity) {
     final item = box.get(cartKey);
     if (item == null) {
-      debugPrint('[LOCAL] updateQuantity → Item not found: $cartKey');
       return;
     }
 
-    debugPrint(
-        '[LOCAL] BEFORE UPDATE → serverCartItemId: ${item.serverCartItemId}');
 
     // Update quantity AND mark for update in ONE operation
     final syncAction = item.serverCartItemId != null
@@ -77,13 +70,9 @@ class CartLocalRepository {
 
     // Verify the save
     final verify = box.get(cartKey);
-    debugPrint(
-        '[LOCAL] AFTER UPDATE → $cartKey → qty: $quantity, syncAction: $syncAction, serverCartItemId: ${verify
-            ?.serverCartItemId}');
   }
 
   void addItemGuest(UserCart item) {
-    debugPrint('[LOCAL] GUEST ADD → ${item.productId}-${item.variantId}');
     box.put(
       item.cartKey,
       item.copyWith(
@@ -114,7 +103,6 @@ class CartLocalRepository {
   }) {
     final item = box.get(oldCartKey);
     if (item == null) {
-      debugPrint('[LOCAL] updateAddons → Item not found: $oldCartKey');
       return;
     }
 
@@ -133,16 +121,12 @@ class CartLocalRepository {
     if (newCartKey == oldCartKey) {
       // Same cartKey (addon-set unchanged, or the sorted-suffix happened
       box.put(oldCartKey, updatedItem);
-      debugPrint(
-          '[LOCAL] updateAddons (same key) → $oldCartKey (qty:${updatedItem.quantity}, syncAction: $syncAction)');
       return;
     }
 
     // Move the row: delete at the old key, put at the new key.
     box.delete(oldCartKey);
     box.put(newCartKey, updatedItem);
-    debugPrint(
-        '[LOCAL] updateAddons → $oldCartKey → $newCartKey (qty:${updatedItem.quantity}, syncAction: $syncAction)');
   }
 
   /// Guest-mode mirror of [updateAddons] — no sync action queued.
@@ -153,7 +137,6 @@ class CartLocalRepository {
   }) {
     final item = box.get(oldCartKey);
     if (item == null) {
-      debugPrint('[LOCAL] updateAddonsGuest → Item not found: $oldCartKey');
       return;
     }
 
@@ -182,14 +165,11 @@ class CartLocalRepository {
     printAllHiveData();
     final item = box.get(cartKey);
     if (item == null) {
-      debugPrint('[LOCAL] markForUpdate → Item not found: $cartKey');
       return;
     }
 
     // Only mark for update if it already has a server ID (i.e., already added before)
     if (item.serverCartItemId == null) {
-      debugPrint(
-          '[LOCAL] markForUpdate → Skipping (not yet added to server): $cartKey');
       return;
     }
 
@@ -197,14 +177,11 @@ class CartLocalRepository {
       cartKey,
       item.copyWith(syncAction: CartSyncAction.update),
     );
-    debugPrint('[LOCAL] MARKED FOR UPDATE → $cartKey (qty: ${item
-        .quantity}, serverCartItemId: ${item.serverCartItemId})');
   }
 
   void markForDelete(String cartKey) {
     final item = box.get(cartKey);
     if (item == null) {
-      debugPrint('[LOCAL] markForDelete → Item not found: $cartKey');
       return;
     }
 
@@ -214,37 +191,29 @@ class CartLocalRepository {
         cartKey,
         item.copyWith(syncAction: CartSyncAction.delete),
       );
-      debugPrint('🛒 LOCAL MARKED FOR DELETE → $cartKey (serverCartItemId: ${item
-          .serverCartItemId})');
     } else {
       // Item was never synced to server, safe to delete immediately
       box.delete(cartKey);
-      debugPrint('🛒 LOCAL DELETE (no server sync needed) → $cartKey');
     }
   }
 
   void deleteLocally(String cartKey) {
     final item = box.get(cartKey);
     if (item == null) {
-      debugPrint('[LOCAL] markForDelete → Item not found: $cartKey');
       return;
     }
 
     // Item was never synced to server, safe to delete immediately
     box.delete(cartKey);
-    debugPrint('🛒 LOCAL DELETE (no server sync needed) → $cartKey');
 
   }
 
   void clearLocalCart() {
-    debugPrint('🧹 LOCAL CLEAR CART → before: ${box.length} items');
     box.clear();
     box.flush();
-    debugPrint('🧹 LOCAL CLEAR CART → after: ${box.length} items');
   }
 
   void markAllForDelete() {
-    debugPrint('🧹 LOCAL MARK ALL FOR DELETE');
 
     final allItems = box.values.toList();
 
@@ -261,19 +230,12 @@ class CartLocalRepository {
       }
     }
 
-    debugPrint('🧹 Marked ${allItems
-        .where((i) => i.serverCartItemId != null)
-        .length} items for server deletion');
-    debugPrint('🧹 Deleted ${allItems
-        .where((i) => i.serverCartItemId == null)
-        .length} local-only items');
   }
 
   void markSynced(String cartKey, {int? serverCartItemId}) {
     log('Server Cart Item Id $serverCartItemId');
     final item = box.get(cartKey);
     if (item == null) {
-      debugPrint('[LOCAL] markSynced → Item not found: $cartKey');
       return;
     }
 
@@ -284,12 +246,9 @@ class CartLocalRepository {
 
     box.put(cartKey, updatedItem);
     final verify = box.get(cartKey);
-    debugPrint('[VERIFY SAVE] serverCartItemId after put: ${verify
-        ?.serverCartItemId}');
   }
 
   void removeLocal(String cartKey) {
-    debugPrint('[LOCAL] REMOVED → $cartKey');
     box.delete(cartKey);
   }
 
@@ -312,7 +271,6 @@ class CartLocalRepository {
       return entry;
     }).toList();
 
-    debugPrint('[LOCAL] Created sync payload with ${payload.length} items');
 
     return payload;
   }
@@ -322,32 +280,21 @@ class CartLocalRepository {
   }
 
   void printAllHiveData() {
-    debugPrint('=== HIVE CART DATA START ===');
     if (box.isEmpty) {
-      debugPrint('Box is EMPTY');
     } else {
       for (final key in box.keys) {
         final item = box.get(key);
-        debugPrint('Key: $key');
-        debugPrint('Value: ${item?.serverCartItemId}');
-        debugPrint('---');
       }
     }
-    debugPrint('Total items: ${box.length}');
-    debugPrint('=== HIVE CART DATA END ===');
   }
 
 
   /// Syncs server cart items to local storage.
   void syncServerCartToLocal(List<dynamic> serverCartItems) {
     try {
-      debugPrint('🔄 SYNCING SERVER CART TO LOCAL');
-      debugPrint('📦 Server items count: ${serverCartItems.length}');
-      debugPrint('📦 Local items count BEFORE sync: ${box.length}');
 
       // Ensure box is ready
       if (!box.isOpen) {
-        debugPrint('❌ Hive box is not open! Cannot sync.');
         return;
       }
 
@@ -360,17 +307,13 @@ class CartLocalRepository {
         if (variantId.isNotEmpty && storeId.isNotEmpty && productId.isNotEmpty) {
           final cartKey = _buildServerCartKey(serverItem);
           serverItemsMap[cartKey] = serverItem;
-          debugPrint('🔑 Server item mapped: $cartKey');
         } else {
-          debugPrint('⚠️ Skipping server item with missing IDs: productId=$productId, variantId=$variantId, storeId=$storeId');
         }
       }
 
-      debugPrint('📊 Server items mapped: ${serverItemsMap.length}');
 
       // Get all local items
       final localItems = box.values.toList();
-      debugPrint('📊 Local items found: ${localItems.length}');
 
       // Track changes
       int updated = 0;
@@ -390,12 +333,10 @@ class CartLocalRepository {
 
         if (localItem != null) {
           // Item exists locally
-          debugPrint('📍 Found local item: $cartKey (serverCartItemId: ${localItem.serverCartItemId}, qty: ${localItem.quantity}, syncAction: ${localItem.syncAction})');
 
           // Skip if item has pending changes
           if (localItem.syncAction != CartSyncAction.none) {
-            debugPrint('⏭️ SKIPPED: $cartKey (has pending sync action: ${localItem.syncAction})');
-            skipped++;
+
             continue;
           }
 
@@ -411,20 +352,15 @@ class CartLocalRepository {
               ),
             );
             updated++;
-            debugPrint('✏️ UPDATED: $cartKey → qty: $serverQuantity, serverId: $serverCartItemId');
           } else {
-            debugPrint('✓ NO CHANGE: $cartKey (already in sync)');
           }
         } else {
           // Item doesn't exist locally - add it from server
-          debugPrint('🆕 Creating new local item: $cartKey');
           final newItem = _createUserCartFromServer(serverItem);
           if (newItem != null) {
             box.put(cartKey, newItem);
             added++;
-            debugPrint('➕ ADDED: $cartKey → qty: $serverQuantity, serverId: $serverCartItemId');
           } else {
-            debugPrint('❌ Failed to create item: $cartKey');
           }
         }
       }
@@ -434,30 +370,23 @@ class CartLocalRepository {
         if (!serverItemsMap.containsKey(localItem.cartKey)) {
           if (localItem.syncAction == CartSyncAction.add) {
             // Pending add hasn't reached the server yet — keep for next sync.
-            debugPrint('⏭️ KEEPING pending add (not yet on server): ${localItem.cartKey}');
-            skipped++;
+
           } else if (localItem.syncAction == CartSyncAction.update) {
-            debugPrint('⏭️ KEEPING: ${localItem.cartKey} (has pending action: ${localItem.syncAction})');
-            skipped++;
+
           } else if (localItem.syncAction == CartSyncAction.delete) {
             // Server already lacks this item — local delete intent is moot.
             box.delete(localItem.cartKey);
-            removed++;
-            debugPrint('🗑️ REMOVED pending delete (already absent on server): ${localItem.cartKey}');
+
           } else if (localItem.serverCartItemId != null) {
             box.delete(localItem.cartKey);
-            removed++;
-            debugPrint('🗑️ REMOVED: ${localItem.cartKey} (not on server, serverCartItemId: ${localItem.serverCartItemId})');
+
           } else {
             box.delete(localItem.cartKey);
-            removed++;
-            debugPrint('🗑️ REMOVED unsynced invalid item (no serverCartItemId, no pending action): ${localItem.cartKey}');
+
           }
         }
       }
 
-      debugPrint('✅ SYNC COMPLETE → Added: $added, Updated: $updated, Removed: $removed, Skipped: $skipped');
-      debugPrint('📊 Total local items AFTER sync: ${box.length}');
 
       // Print all items for debugging
       printAllHiveData();

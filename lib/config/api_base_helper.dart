@@ -230,8 +230,6 @@ class ApiBaseHelper {
         ),
       );
       if (kDebugMode) {
-        print(
-            'response api****$url***************${response.statusCode}*********${response.data}');
       }
 
       responseJson = response;

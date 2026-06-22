@@ -40,7 +40,7 @@ class HomeMarketCategoriesBloc
       final response = await repository.fetchMarketCategories(
         perPage: perPage,
         currentPage: currentPage,
-        includeNoProduct: true,
+        includeNoProduct: false,
       );
 
       final List<MarketCategoryData> categoryData = _parseList(response);
@@ -93,7 +93,7 @@ class HomeMarketCategoriesBloc
         final response = await repository.fetchMarketCategories(
           perPage: perPage,
           currentPage: currentPage,
-          includeNoProduct: true,
+          includeNoProduct: false,
         );
         final newData = _parseList(response);
 

@@ -29,7 +29,6 @@ void main() async {
     Bloc.observer = AppBlocObserver();
     runApp(const MyApp());
   }, (error, stackTrace) {
-    debugPrint('Unhandled app error: $error');
     debugPrintStack(stackTrace: stackTrace);
   });
 }

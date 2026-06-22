@@ -9,8 +9,10 @@ import '../../../../l10n/app_localizations.dart';
 import '../../../../router/app_routes.dart';
 import '../../../../utils/widgets/custom_image_container.dart';
 import '../../../../utils/widgets/custom_shimmer.dart';
+import '../../../../utils/widgets/store_follow_heart.dart';
 import '../../../near_by_stores/bloc/near_by_store/near_by_store_bloc.dart';
 import '../../../near_by_stores/model/near_by_store_model.dart';
+import '../../../store_follow/bloc/store_follow_bloc.dart';
 
 /// Home tab section showing a horizontal scrolling list of nearby stores.
 /// Mirrors [HomeMarketCategoriesSection]'s heading + see-all pattern, but
@@ -329,6 +331,18 @@ class _HomeStoreStripCard extends StatelessWidget {
     final double rating =
         double.tryParse(store.avgStoreRating ?? '0.0') ?? 0.0;
 
+    // Seed the Shop-Follow controller from the server snapshot so this
+    // strip card stays in sync with every other card showing the same
+    // store (popular shop strip, listing banner, map popup, detail page).
+    final int? storeId = store.id;
+    if (storeId != null) {
+      StoreFollowController.instance.seedFromStore(
+        storeId: storeId,
+        isFollowed: store.isFollowed,
+        followersCount: store.followersCount,
+      );
+    }
+
     return Material(
       color: theme.colorScheme.onPrimary,
       borderRadius: BorderRadius.circular(12),
@@ -450,6 +464,16 @@ class _HomeStoreStripCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        if (storeId != null) ...[
+                          const Spacer(),
+                          StoreFollowHeart(
+                            storeId: storeId,
+                            fallbackIsFollowed: store.isFollowed ?? false,
+                            fallbackFollowersCount:
+                                store.followersCount ?? 0,
+                            iconSize: 16,
+                          ),
+                        ],
                       ],
                     ),
                   ],

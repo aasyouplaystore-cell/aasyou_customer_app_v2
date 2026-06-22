@@ -24,6 +24,7 @@ import 'package:aasyou/screens/home_page/bloc/feature_section_product/feature_se
 import 'package:aasyou/screens/home_page/bloc/sub_category/sub_category_bloc.dart';
 import 'package:aasyou/screens/home_page/bloc/sub_category/sub_category_event.dart';
 import 'package:aasyou/screens/near_by_stores/bloc/near_by_store/near_by_store_bloc.dart';
+import 'package:aasyou/config/dependency_injection_container.dart';
 import 'package:aasyou/screens/user_profile/bloc/user_profile_bloc/user_profile_bloc.dart';
 import 'package:aasyou/utils/widgets/custom_image_container.dart';
 import '../../../bloc/user_cart_bloc/user_cart_event.dart';
@@ -312,26 +313,69 @@ class _HomePageState extends State<HomePage>
     final updatedSlug = _tabController.index == 0 ? '' : slug;
     final isForAllCategory = _tabController.index == 0 ? true : false;
 
-    context.read<FeatureSectionProductBloc>().add(FetchFeatureSectionProducts(slug: updatedSlug));
-    context.read<SubCategoryBloc>().add(FetchSubCategory(slug: updatedSlug, isForAllCategory: isForAllCategory));
-    context.read<BrandsBloc>().add(FetchBrands(categorySlug: updatedSlug));
-    context.read<BannerBloc>().add(FetchBanner(categorySlug: updatedSlug));
-    context.read<GetUserCartBloc>().add(FetchUserCart());
-    context.read<GetAddressListBloc>().add(FetchUserAddressList());
-    context.read<NotificationBloc>().add(FetchNotifications());
+    // Defensive guards: bloc.add throws
+    //   "Bad state: Cannot add new events after calling close"
+    // when the underlying bloc instance has been disposed (e.g. when a
+    // per-route BlocProvider that owned a factory-registered instance
+    // was torn down between mounts but a stale `context.read` handle is
+    // still being used by an in-flight pull-to-refresh callback). Each
+    // .add is wrapped in an `isClosed` check; this is cheap and avoids
+    // crashing pull-to-refresh. See BUG 1 in the home-page refresh
+    // runtime fixlist.
+    final featureBloc = context.read<FeatureSectionProductBloc>();
+    if (!featureBloc.isClosed) {
+      featureBloc.add(FetchFeatureSectionProducts(slug: updatedSlug));
+    }
+    final subCategoryBloc = context.read<SubCategoryBloc>();
+    if (!subCategoryBloc.isClosed) {
+      subCategoryBloc.add(
+          FetchSubCategory(slug: updatedSlug, isForAllCategory: isForAllCategory));
+    }
+    final brandsBloc = context.read<BrandsBloc>();
+    if (!brandsBloc.isClosed) {
+      brandsBloc.add(FetchBrands(categorySlug: updatedSlug));
+    }
+    final bannerBloc = context.read<BannerBloc>();
+    if (!bannerBloc.isClosed) {
+      bannerBloc.add(FetchBanner(categorySlug: updatedSlug));
+    }
+    final cartBloc = context.read<GetUserCartBloc>();
+    if (!cartBloc.isClosed) {
+      cartBloc.add(FetchUserCart());
+    }
+    final addressBloc = context.read<GetAddressListBloc>();
+    if (!addressBloc.isClosed) {
+      addressBloc.add(FetchUserAddressList());
+    }
+    final notificationBloc = context.read<NotificationBloc>();
+    if (!notificationBloc.isClosed) {
+      notificationBloc.add(FetchNotifications());
+    }
 
     // Market Categories + Browse Stores home strips are global (not
     // per-category-tab) — only refetch when the user is on the All / first
     // tab. Mirrors the web app where these sections sit below the banner
     // regardless of tab.
     if (_tabController.index == 0) {
-      context
-          .read<HomeMarketCategoriesBloc>()
-          .add(FetchHomeMarketCategories());
+      final marketBloc = context.read<HomeMarketCategoriesBloc>();
+      if (!marketBloc.isClosed) {
+        marketBloc.add(FetchHomeMarketCategories());
+      }
       if (!AppHelpers.systemVendorTypeIsSingle) {
-        context
-            .read<NearByStoreBloc>()
-            .add(const FetchNearByStores(perPage: 15, searchQuery: ''));
+        // NearByStoreBloc is registered as a getIt **factory** (not a
+        // singleton) and is owned by a top-level BlocProvider(create: ...).
+        // If anything causes that provider subtree to rebuild, the old
+        // instance is closed while existing `context.read` callers may
+        // still hold a stale handle, throwing on .add. Re-resolve fresh
+        // from getIt as a fallback when the context-scoped instance is
+        // already closed.
+        var nearBy = context.read<NearByStoreBloc>();
+        if (nearBy.isClosed) {
+          nearBy = getIt<NearByStoreBloc>();
+        }
+        if (!nearBy.isClosed) {
+          nearBy.add(const FetchNearByStores(perPage: 15, searchQuery: ''));
+        }
       }
     }
 
@@ -344,7 +388,10 @@ class _HomePageState extends State<HomePage>
     }*/
     await Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
-        context.read<SettingsBloc>().add(FetchSettingsData(context: context));
+        final settingsBloc = context.read<SettingsBloc>();
+        if (!settingsBloc.isClosed) {
+          settingsBloc.add(FetchSettingsData(context: context));
+        }
       }
     });
   }
@@ -572,10 +619,18 @@ class _HomePageState extends State<HomePage>
         fontSize: 11,
         fontWeight: FontWeight.w500,
       ),
-      indicatorColor: textColor,
-      indicatorWeight: 3,
-      indicatorSize: TabBarIndicatorSize.label,
-      padding: const EdgeInsets.symmetric(horizontal: 0),
+      // Each Tab now renders its own pill-style chrome (see
+      // home_tab_item.dart), so the default underline indicator is
+      // suppressed to avoid a double-affordance.
+      indicator: const BoxDecoration(),
+      indicatorColor: Colors.transparent,
+      indicatorWeight: 0.0,
+      dividerColor: Colors.transparent,
+      overlayColor:
+          WidgetStateProperty.all<Color>(Colors.transparent),
+      indicatorSize: TabBarIndicatorSize.tab,
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 3),
       tabs: tabBarTabs,
     );
   }

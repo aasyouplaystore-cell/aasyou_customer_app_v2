@@ -65,7 +65,6 @@ class GetUserCartBloc extends Bloc<GetUserCartEvent, GetUserCartState> {
         if (message.toLowerCase().contains('empty') ||
             (getCartData.first.data?.items.isEmpty ?? true)) {
 
-          debugPrint('🛒 Server cart is EMPTY → Clearing local cart');
 
           // CLEAR LOCAL HIVE CART
           localRepo.clearLocalCart();
@@ -74,7 +73,6 @@ class GetUserCartBloc extends Bloc<GetUserCartEvent, GetUserCartState> {
           });
           // Reload CartBloc to reflect empty state
 
-          debugPrint('🔄 CartBloc reloaded (empty cart)');
         }
 
         // Emit loaded state even if empty
@@ -100,7 +98,6 @@ class GetUserCartBloc extends Bloc<GetUserCartEvent, GetUserCartState> {
           if (data != null && data.items.isNotEmpty) {
             final serverItems = data.items;
 
-            debugPrint('🔄 Starting sync: ${serverItems.length} server items');
 
             // Convert to sync format
             final serverItemsList = serverItems.map((item) {
@@ -128,7 +125,6 @@ class GetUserCartBloc extends Bloc<GetUserCartEvent, GetUserCartState> {
                         })
                     .toList(),
               };
-              debugPrint('🔍 Mapping server item: ${item.product?.id}_${item.productVariantId} → id: ${item.id}, qty: ${item.quantity}, addons: ${item.addons.length}');
               return mapped;
             }).toList();
 
@@ -138,12 +134,10 @@ class GetUserCartBloc extends Bloc<GetUserCartEvent, GetUserCartState> {
             try {
               // Sync to local storage
               localRepo.syncServerCartToLocal(serverItemsList);
-              debugPrint('✅ Server cart synced to local storage');
 
               // CRITICAL: Reload CartBloc to show synced items
               await Future.delayed(const Duration(milliseconds: 150));
               cartBloc.add(LoadCart());
-              debugPrint('🔄 CartBloc reloaded after sync');
             } catch (syncError, stackTrace) {
               debugPrint('❌ Sync failed: $syncError');
               debugPrint('Stack: $stackTrace');
@@ -155,7 +149,6 @@ class GetUserCartBloc extends Bloc<GetUserCartEvent, GetUserCartState> {
                 .toList();
           }
           else {
-            debugPrint('⚠️ No items to sync');
           }
         }
 
@@ -166,7 +159,6 @@ class GetUserCartBloc extends Bloc<GetUserCartEvent, GetUserCartState> {
         ));
 
         localCartBloc.add(LoadCart());
-        debugPrint('🔄 Triggered CartBloc reload');
       } else {
         emit(GetUserCartLoaded(
           cartData: cartData,
@@ -214,10 +206,8 @@ class GetUserCartBloc extends Bloc<GetUserCartEvent, GetUserCartState> {
       SyncServerCartToLocal event,
       Emitter<GetUserCartState> emit,
       ) async {
-    debugPrint('🔄 Manual sync triggered');
 
     if (event.serverItems.isEmpty) {
-      debugPrint('⚠️ No server items to sync');
       return;
     }
 
@@ -226,7 +216,6 @@ class GetUserCartBloc extends Bloc<GetUserCartEvent, GetUserCartState> {
 
       // Reload CartBloc
       cartBloc.add(LoadCart());
-      debugPrint('🔄 CartBloc reloaded after manual sync');
     } catch (e) {
       debugPrint('❌ Manual sync failed: $e');
     }
@@ -344,7 +333,6 @@ class GetUserCartBloc extends Bloc<GetUserCartEvent, GetUserCartState> {
 
     totalCartItems = newItemsCount;
 
-    debugPrint('⚡ Optimistic patch applied → $newItemsCount items, totalQty: $newTotalQty');
 
     emit(GetUserCartLoaded(
       cartData: cartData,

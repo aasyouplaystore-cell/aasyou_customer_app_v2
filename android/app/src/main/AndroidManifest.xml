@@ -86,16 +86,29 @@
             android:name="android.support.FILE_PROVIDER_PATHS"
             android:resource="@xml/filepaths" />
 
+        <!-- Truecaller SDK ClientId. Issued in Truecaller Developer Console
+             and tied to the package name + SHA-1 fingerprint of the signing
+             key. WITHOUT this meta-data the SDK silently fails to initialize
+             (isOAuthFlowUsable returns false even on devices with Truecaller
+             installed). -->
+        <meta-data
+            android:name="com.truecaller.android.sdk.ClientId"
+            android:value="cvmndqkee1berwtmbi8us4f6qs-ls-sogpazb2hctce"/>
+
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
          https://developer.android.com/reference/android/content/Intent#ACTION_PROCESS_TEXT.
 
-         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
+         In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin.
+
+         Truecaller SDK requires explicit package visibility on Android 11+. Without these, isOAuthFlowUsable silently returns false. -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
         </intent>
+        <package android:name="com.truecaller"/>
+        <package android:name="com.truecaller.debug"/>
     </queries>
 </manifest>

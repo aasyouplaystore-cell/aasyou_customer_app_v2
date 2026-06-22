@@ -12,6 +12,10 @@ class CartUIBloc extends Bloc<CartUIEvent, CartUIState> {
       emit(state.copyWith(selectedDeliveryType: event.type));
     });
 
+    on<SetFulfillmentMode>((event, emit) {
+      emit(state.copyWith(selectedFulfillmentMode: event.mode));
+    });
+
     on<SetWalletUsage>((event, emit) {
       emit(state.copyWith(useWallet: event.useWallet));
     });

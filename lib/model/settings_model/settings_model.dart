@@ -337,6 +337,13 @@ class AuthenticationSettings {
   final bool googleLogin;
   final String googleApiKey;
   final String smsGateway;
+  // Admin login-method toggles. Default true so older payloads keep
+  // showing every option.
+  final bool mobileLogin;
+  final bool emailLogin;
+  final bool otpLogin;
+  final bool signupEnabled;
+  final bool autoSignupOnLogin;
 
   AuthenticationSettings({
     required this.customSms,
@@ -354,7 +361,12 @@ class AuthenticationSettings {
     required this.fireBaseMeasurementId,
     required this.googleLogin,
     required this.googleApiKey,
-    required this.smsGateway
+    required this.smsGateway,
+    this.mobileLogin = true,
+    this.emailLogin = true,
+    this.otpLogin = true,
+    this.signupEnabled = true,
+    this.autoSignupOnLogin = true,
   });
 
   factory AuthenticationSettings.fromJson(Map<String, dynamic> json) {
@@ -375,6 +387,11 @@ class AuthenticationSettings {
       googleLogin: json['googleLogin'] as bool,
       googleApiKey: json['googleApiKey'] as String,
       smsGateway: json['smsGateway'] as String,
+      mobileLogin: json['mobileLogin'] == null ? true : parseBool(json['mobileLogin']) as bool,
+      emailLogin: json['emailLogin'] == null ? true : parseBool(json['emailLogin']) as bool,
+      otpLogin: json['otpLogin'] == null ? true : parseBool(json['otpLogin']) as bool,
+      signupEnabled: json['signupEnabled'] == null ? true : parseBool(json['signupEnabled']) as bool,
+      autoSignupOnLogin: json['autoSignupOnLogin'] == null ? true : parseBool(json['autoSignupOnLogin']) as bool,
     );
   }
 }

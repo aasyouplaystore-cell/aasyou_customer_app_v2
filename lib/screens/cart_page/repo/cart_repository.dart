@@ -120,14 +120,12 @@ class CartRepository {
         'items': items,
       };
 
-      debugPrint('[SYNC] Sending cart sync payload: ${jsonEncode(payload)}');
 
       final response = await AppHelpers.apiBaseHelper.postAPICall(
         ApiRoutes.cartSyncApi,
         payload,
       );
 
-      debugPrint('[SYNC] Response: ${response.statusCode} - ${response.data}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return response.data;

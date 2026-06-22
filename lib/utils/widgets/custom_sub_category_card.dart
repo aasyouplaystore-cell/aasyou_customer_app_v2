@@ -4,77 +4,70 @@ import 'package:aasyou/utils/widgets/custom_image_container.dart';
 class CustomSubCategoryCard extends StatelessWidget {
   final String categoryImage;
   final String categoryName;
+  final VoidCallback? onTap;
 
   const CustomSubCategoryCard({
     super.key,
     required this.categoryName,
-    required this.categoryImage
+    required this.categoryImage,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Use the available space from grid
-        final cardWidth = constraints.maxWidth;
-        final cardHeight = constraints.maxHeight;
-        final borderRadius = cardWidth * 0.12;
+    final theme = Theme.of(context);
 
-        return SizedBox(
-          width: cardWidth,
-          height: cardHeight,
+    return Card(
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      color: theme.colorScheme.surfaceContainerHigh,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                flex: 65,
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.onSecondary,
-                    borderRadius: BorderRadius.circular(borderRadius),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: SizedBox(
+                  width: 32,
+                  height: 32,
+                  child: CustomImageContainer(
+                    imagePath: categoryImage,
+                    fit: BoxFit.contain,
                   ),
-                  alignment: Alignment.center,
-                  padding: const EdgeInsets.all(4.0),
-                  child: CustomImageContainer(imagePath:categoryImage, fit: BoxFit.cover, )
                 ),
               ),
-              const SizedBox(height: 5,),
-              Expanded(
-                flex: 35,
-                child: categoryNameWidget(
-                    categoryName: categoryName,
-                  cardWidth: cardWidth
+              const SizedBox(height: 6),
+              Flexible(
+                child: Text(
+                  categoryName,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
               ),
             ],
           ),
-        );
-      },
-    );
-  }
-
-  Widget categoryNameWidget ({
-    required String categoryName, required double cardWidth}) {
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: cardWidth * 0.05),
-      child: Text(
-        categoryName,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: _getResponsiveFontSize(cardWidth),
-          fontWeight: FontWeight.w600,
         ),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
       ),
     );
-  }
-
-  double _getResponsiveFontSize(double cardWidth) {
-    // Calculate font size based on card width
-    if (cardWidth >= 100) return 16;
-    if (cardWidth >= 80) return 15;
-    if (cardWidth >= 60) return 14;
-    return 14;
   }
 }
