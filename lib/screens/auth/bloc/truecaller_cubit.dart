@@ -97,17 +97,33 @@ class TruecallerState {
     this.errorMessage,
   });
 
+  /// `copyWith` with proper nullable-clear support via sentinel.
+  ///
+  /// The previous `T? x` + `x ?? this.x` pattern made it IMPOSSIBLE to
+  /// clear a field — passing `null` was indistinguishable from "argument
+  /// not supplied", so stale `errorMessage` / `authorizationCode` /
+  /// `codeVerifier` from a previous failure leaked into the next
+  /// `available`/`checking`/`success` state. UI then displayed an old
+  /// error message after a successful retry, etc.
+  ///
+  /// Each field now accepts a `ValueGetter<T?>?` sentinel: if the caller
+  /// passes the wrapper at all, its returned value (including null) is
+  /// used; if omitted, the existing field is preserved.
   TruecallerState copyWith({
     TruecallerStatus? status,
-    String? authorizationCode,
-    String? codeVerifier,
-    String? errorMessage,
+    ValueGetter<String?>? authorizationCode,
+    ValueGetter<String?>? codeVerifier,
+    ValueGetter<String?>? errorMessage,
   }) {
     return TruecallerState(
       status: status ?? this.status,
-      authorizationCode: authorizationCode ?? this.authorizationCode,
-      codeVerifier: codeVerifier ?? this.codeVerifier,
-      errorMessage: errorMessage ?? this.errorMessage,
+      authorizationCode: authorizationCode != null
+          ? authorizationCode()
+          : this.authorizationCode,
+      codeVerifier:
+          codeVerifier != null ? codeVerifier() : this.codeVerifier,
+      errorMessage:
+          errorMessage != null ? errorMessage() : this.errorMessage,
     );
   }
 }
@@ -192,8 +208,12 @@ class TruecallerCubit extends Cubit<TruecallerState> {
     if (!isClosed) {
       emit(state.copyWith(
         status: TruecallerStatus.authenticating,
-        // Clear previous error so the UI doesn't show a stale snackbar.
-        errorMessage: null,
+        // Clear previous error + stale auth payload so the UI doesn't show
+        // a stale snackbar and a downstream `success` consumer can't
+        // accidentally reuse the previous attempt's auth code.
+        errorMessage: () => null,
+        authorizationCode: () => null,
+        codeVerifier: () => null,
       ));
     }
 
@@ -201,7 +221,12 @@ class TruecallerCubit extends Cubit<TruecallerState> {
       // ── PKCE: code_verifier + code_challenge ──────────────────────────
       // These two SDK helpers DO call result.success(), so they're safe to
       // await directly. (Unlike initializeSDK / getAuthorizationCode.)
-      _codeVerifier = await TcSdk.generateRandomCodeVerifier as String?;
+      // NOTE: parentheses around `await` are LOAD-BEARING — without them
+      // `await X as String?` parses as `await (X as String?)`, casting the
+      // unawaited Future<dynamic> to String? and throwing TypeError before
+      // the await ever resolves. That bug silently killed the entire
+      // Truecaller path (always falling into the outer catch).
+      _codeVerifier = (await TcSdk.generateRandomCodeVerifier) as String?;
       // Guard against a null/empty verifier — without this, the stream
       // listener and getAuthorizationCode fire with no PKCE pair, and the
       // backend rejects the exchange with an opaque error. Better to fail
@@ -210,7 +235,7 @@ class TruecallerCubit extends Cubit<TruecallerState> {
         if (!isClosed) {
           emit(state.copyWith(
             status: TruecallerStatus.failure,
-            errorMessage: 'Could not start Truecaller — please retry',
+            errorMessage: () => 'Could not start Truecaller — please retry',
           ));
         }
         return;
@@ -247,8 +272,12 @@ class TruecallerCubit extends Cubit<TruecallerState> {
       TcSdk.setOAuthState(oauthState);
 
       // Small breathing room for the native side to record the 3 set*
-      // calls before we kick off getAuthorizationCode.
-      await Future.delayed(const Duration(milliseconds: 300));
+      // calls before we kick off getAuthorizationCode. 800ms (was 300ms) —
+      // on cold/slow devices the unawaited setCodeChallenge / setOAuthScopes
+      // / setOAuthState platform-channel calls can take >300ms to land; if
+      // getAuthorizationCode fires before they do, Truecaller rejects the
+      // request with an opaque PKCE/state error.
+      await Future.delayed(const Duration(milliseconds: 800));
 
       // ── Stream listener ───────────────────────────────────────────────
       // Register BEFORE firing `getAuthorizationCode` so we don't miss a
@@ -266,16 +295,16 @@ class TruecallerCubit extends Cubit<TruecallerState> {
             if (!isClosed) {
               emit(state.copyWith(
                 status: TruecallerStatus.success,
-                authorizationCode: code,
-                codeVerifier: _codeVerifier ?? '',
-                errorMessage: null,
+                authorizationCode: () => code,
+                codeVerifier: () => _codeVerifier ?? '',
+                errorMessage: () => null,
               ));
             }
           } else {
             if (!isClosed) {
               emit(state.copyWith(
                 status: TruecallerStatus.failure,
-                errorMessage: 'Truecaller returned no authorization code',
+                errorMessage: () => 'Truecaller returned no authorization code',
               ));
             }
           }
@@ -284,7 +313,7 @@ class TruecallerCubit extends Cubit<TruecallerState> {
           if (!isClosed) {
             emit(state.copyWith(
               status: TruecallerStatus.failure,
-              errorMessage:
+              errorMessage: () =>
                   result.error?.message ?? 'Truecaller login failed',
             ));
           }
@@ -298,8 +327,16 @@ class TruecallerCubit extends Cubit<TruecallerState> {
       // it's a "void" trigger that just opens the consent sheet. The actual
       // outcome arrives via the stream above. Fire-and-forget — do NOT
       // await, or this Future never resolves.
+      //
+      // NOTE: We bind the getter to a local `final` rather than leaving a
+      // bare reference (`TcSdk.getAuthorizationCode;`). Evaluating the
+      // getter is what triggers the MethodChannel call; a bare reference
+      // works today but if the analyzer's unused-getter rule is ever
+      // enabled OR the plugin migrates this to a method, the bare line
+      // silently no-ops and the consent sheet never opens — the stream
+      // listener then sits idle until the 30s timeout fires.
       // ignore: unawaited_futures
-      TcSdk.getAuthorizationCode;
+      final _ = TcSdk.getAuthorizationCode;
 
       // ── 30-second timeout ─────────────────────────────────────────────
       // Truecaller's consent sheet has no hard upper bound; if the user
@@ -312,7 +349,7 @@ class TruecallerCubit extends Cubit<TruecallerState> {
           if (!isClosed && state.status == TruecallerStatus.authenticating) {
             emit(state.copyWith(
               status: TruecallerStatus.failure,
-              errorMessage:
+              errorMessage: () =>
                   'Truecaller login timed out. Please try again.',
             ));
           }
@@ -323,7 +360,7 @@ class TruecallerCubit extends Cubit<TruecallerState> {
       if (!isClosed) {
         emit(state.copyWith(
           status: TruecallerStatus.failure,
-          errorMessage: e.toString(),
+          errorMessage: () => e.toString(),
         ));
       }
     } finally {

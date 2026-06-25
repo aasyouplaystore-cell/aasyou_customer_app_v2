@@ -402,28 +402,40 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             break;
           case 'session-expired':
           case 'ERROR_SESSION_EXPIRED':
-            errorMessage =
-                'The OTP session has expired. Please request a new OTP.';
+            errorMessage = 'The OTP session has expired. Please request a new OTP.';
             break;
           case 'invalid-verification-id':
           case 'ERROR_INVALID_VERIFICATION_ID':
-            errorMessage =
-                'The verification session is invalid. Please request a new OTP.';
+            errorMessage = 'The verification session is invalid. Please request a new OTP.';
             break;
           case 'network-request-failed':
             errorMessage = 'Network error. Please check your connection.';
             break;
           case 'too-many-requests':
-            errorMessage = 'Too many requests. Please try again later.';
+            errorMessage = 'Too many requests. Please try again in a few minutes.';
             break;
+          case 'invalid-phone-number':
+            errorMessage = 'Phone number format is invalid.';
+            break;
+          // Suppress technical Firebase noise. Log it for debugging, show a
+          // generic friendly message to the user. App Check, Pigeon, internal
+          // errors etc. are not user-actionable.
           case 'internal-error':
           case 'ERROR_INTERNAL_ERROR':
-            // Surface the underlying message — these often hide App Check /
-            // SafetyNet rejections worth showing to ops.
-            errorMessage = '[internal-error] ${rawMessage ?? "Firebase internal error"}';
+          case 'app-check-token-is-invalid':
+          case 'app-not-authorized':
+          case 'billing-not-enabled':
+          case 'missing-client-identifier':
+          case 'invalid-app-credential':
+          case 'recaptcha-not-enabled':
+          case 'unknown':
+            log('Firebase noise [$code]: $rawMessage');
+            errorMessage = 'Verification failed. Please try again.';
             break;
           default:
-            errorMessage = '[$code] ${rawMessage ?? "Verification failed"}';
+            // Anything else also gets a friendly message + technical detail logged.
+            log('Firebase auth fail [$code]: $rawMessage');
+            errorMessage = 'Verification failed. Please try again.';
         }
       }
       emit(AuthFailed(error: errorMessage));
@@ -483,26 +495,37 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           // If it's a platform exception or has more details:
           log('Full exception: $e');
           log('Verification failed: ${e.message}');
-          String? errorMessage;
-
+          String errorMessage = 'Unable to send OTP right now. Please try again.';
 
           switch (e.code) {
             case 'invalid-phone-number':
               errorMessage = 'The phone number format is incorrect. Please enter a valid number with country code.';
               break;
-
             case 'too-many-requests':
               errorMessage = 'Too many requests. Please try again later.';
               break;
-
             case 'operation-not-allowed':
               errorMessage = 'Phone authentication is not enabled for this project.';
               break;
-
-            // default:
+            case 'quota-exceeded':
+              errorMessage = 'Daily SMS quota exceeded. Please try again tomorrow.';
+              break;
+            case 'app-check-token-is-invalid':
+            case 'app-not-authorized':
+            case 'missing-client-identifier':
+            case 'billing-not-enabled':
+            case 'recaptcha-not-enabled':
+            case 'internal-error':
+              // Technical / Firebase-infrastructure failures. Log + show generic.
+              log('Firebase verifyPhoneNumber noise [${e.code}]: ${e.message}');
+              errorMessage = 'Unable to send OTP right now. Please try again.';
+              break;
+            default:
+              log('Firebase verifyPhoneNumber [${e.code}]: ${e.message}');
+              errorMessage = 'Unable to send OTP right now. Please try again.';
           }
 
-          add(AuthFailureEvent(error: errorMessage ?? e.message ?? 'Something went wrong'));
+          add(AuthFailureEvent(error: errorMessage));
         },
         codeSent: (String verificationId, int? newResendToken) {
           log('✅ OTP Code Sent! VerificationId: $verificationId');

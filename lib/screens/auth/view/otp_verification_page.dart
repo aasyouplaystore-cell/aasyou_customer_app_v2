@@ -206,16 +206,26 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
       }
     } else if (state is AuthFailed) {
       _submitted = false; // allow retry
+      // If the user already navigated away (handler fires after a state hop),
+      // do nothing. _isActive is set false in dispose.
+      if (!_isActive || !mounted) return;
+      // Don't show a toast for an empty / generic error — let the previous
+      // success state win.
+      final msg = state.error.trim();
+      if (msg.isEmpty || msg.toLowerCase() == 'null') return;
       ToastManager.show(
         context: context,
-        message: state.error,
+        message: msg,
         type: ToastType.error,
       );
     } else if (state is OTPFailed) {
       _submitted = false; // allow retry
+      if (!_isActive || !mounted) return;
+      final msg = state.error.trim();
+      if (msg.isEmpty || msg.toLowerCase() == 'null') return;
       ToastManager.show(
         context: context,
-        message: state.error,
+        message: msg,
         type: ToastType.error,
       );
     }

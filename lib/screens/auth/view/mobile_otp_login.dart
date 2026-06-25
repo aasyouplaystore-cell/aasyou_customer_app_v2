@@ -96,11 +96,11 @@ class _MobileOtpLoginPageState extends State<MobileOtpLoginPage>
   /// below the provider.
   late final TruecallerCubit _truecallerCubit;
 
-  /// One-shot guard. We auto-trigger Truecaller consent the first time the
-  /// cubit reaches `available`, BUT we do NOT auto-retry after a user
-  /// dismiss/cancel — otherwise the consent sheet would keep slamming open
-  /// and the user could never reach the phone-OTP fallback. After a failure
-  /// they're free to retry via app-relaunch; before that, OTP works as-is.
+  /// Re-entrancy guard for the Truecaller CTA. The user can tap the
+  /// "Continue with Truecaller" button at any time; this stops a double-
+  /// tap (or a rapid retry after a failure) from spawning two overlapping
+  /// `cubit.login()` calls + stream subscriptions. Cleared on failure so
+  /// the user can retry without a full app restart.
   bool _truecallerAutoTriggered = false;
 
   @override
@@ -263,19 +263,20 @@ class _MobileOtpLoginPageState extends State<MobileOtpLoginPage>
       child: BlocListener<TruecallerCubit, TruecallerState>(
         listenWhen: (prev, curr) => prev.status != curr.status,
         listener: (context, tcState) {
-          // ── Auto-trigger Truecaller consent on first availability ─────
-          // Per product direction: don't show a separate "Continue with
-          // Truecaller" button at all. If the device has Truecaller
-          // installed + signed-in (status == available), fire the consent
-          // sheet automatically. If not available, fall through silently
-          // to the phone-OTP form below.
-          if (tcState.status == TruecallerStatus.available &&
-              !_truecallerAutoTriggered) {
-            _truecallerAutoTriggered = true;
-            _truecallerCubit.login();
-            return;
-          }
-
+          // NOTE: We DELIBERATELY do NOT auto-trigger `cubit.login()` on
+          // `TruecallerStatus.available`. The OLD 1.0 app did, and it was
+          // the most-complained-about UX bug in the previous release:
+          //   * Cold-start opens login screen → consent sheet slams open
+          //     on EVERY launch, with no user action.
+          //   * If Truecaller is signed in with a DIFFERENT number than
+          //     the user wants to log in with, the consent sheet blocks
+          //     access to the phone-OTP form (user has to dismiss
+          //     repeatedly to reach the typed-OTP fallback).
+          //   * The `_truecallerAutoTriggered` guard only stops re-firing
+          //     within the SAME page lifetime — every fresh navigation
+          //     back to login pops the sheet again.
+          // Truecaller is now strictly an opt-in: the user taps the CTA
+          // in `_buildTruecallerCta` to trigger the consent sheet.
           if (tcState.status == TruecallerStatus.success &&
               tcState.authorizationCode != null &&
               tcState.codeVerifier != null) {
@@ -284,13 +285,30 @@ class _MobileOtpLoginPageState extends State<MobileOtpLoginPage>
               codeVerifier: tcState.codeVerifier!,
             );
           } else if (tcState.status == TruecallerStatus.failure) {
-            // User dismissed consent sheet, network failed, or backend
-            // rejected the code — silently fall through to OTP form. NO
-            // toast: the OLD 1.0 app's snackbar-on-cancel was confusing
-            // (users see an error for an action they didn't take). The
-            // phone field below is already visible and operable.
-            // (Optional: re-enable the toast for non-user-cancel errors
-            // once the SDK gives us a granular error code.)
+            // Friendly fallback message — Truecaller is an opt-in
+            // convenience, not a required login path. Raw SDK error
+            // strings (network codes, OAuth jargon) just confuse users;
+            // the OTP path is always available below.
+            //
+            // We still suppress on user-cancel (user dismissed the
+            // sheet on purpose — no need to nag).
+            final msg = (tcState.errorMessage ?? '').trim();
+            final lower = msg.toLowerCase();
+            final isUserCancel = lower.contains('cancel') ||
+                lower.contains('dismiss') ||
+                lower.contains('user') && lower.contains('back');
+            if (!isUserCancel) {
+              ToastManager.show(
+                context: context,
+                message:
+                    'Truecaller login could not complete. Please use OTP instead.',
+                type: ToastType.info,
+              );
+            }
+            // Allow retry: clear the one-shot guard and reset the cubit
+            // back to `available` so the CTA re-renders.
+            _truecallerAutoTriggered = false;
+            _truecallerCubit.reset();
           }
         },
         child: _buildScaffold(context),
@@ -346,23 +364,37 @@ class _MobileOtpLoginPageState extends State<MobileOtpLoginPage>
             mobileVerified: user.mobileVerifiedAt ?? '',
             fcm: fcmToken ?? '',
           )));
-      // Only navigate AFTER the session has been dispatched — guarantees
-      // the home screen's bootstrap sees a logged-in user.
-      GoRouter.of(context).go(AppRoutes.home);
+      // Route through splash — SetUserData is processed asynchronously by
+      // UserDataBloc (Hive write is awaited inside the handler, not by
+      // the dispatcher). Pushing /home directly raced the persistence:
+      // the home bootstrap could fire before the token landed and 401-
+      // loop. /splash deliberately exists to gate on a hydrated session,
+      // which is also why the mobileOtpLogin path (AuthBloc) routes
+      // through it (mobile_otp_login.dart:407).
+      GoRouter.of(context).pushReplacement(AppRoutes.splashScreen);
     } on ApiException catch (e) {
       if (!mounted) return;
-      ToastManager.show(
-        context: context,
-        message: e.toString(),
-        type: ToastType.error,
-      );
+      // Suppress raw error noise (empty strings / literal "null") so
+      // users don't see meaningless toasts when the backend returns
+      // no detail.
+      final msg = e.toString().trim();
+      if (msg.isNotEmpty && msg != 'null') {
+        ToastManager.show(
+          context: context,
+          message: msg,
+          type: ToastType.error,
+        );
+      }
     } catch (e) {
       if (!mounted) return;
-      ToastManager.show(
-        context: context,
-        message: e.toString(),
-        type: ToastType.error,
-      );
+      final msg = e.toString().trim();
+      if (msg.isNotEmpty && msg != 'null') {
+        ToastManager.show(
+          context: context,
+          message: msg,
+          type: ToastType.error,
+        );
+      }
     }
   }
 
@@ -413,10 +445,16 @@ class _MobileOtpLoginPageState extends State<MobileOtpLoginPage>
                     message: state.message,
                     type: ToastType.success);
               } else if (state is AuthFailed) {
-                ToastManager.show(
-                    context: context,
-                    message: state.error,
-                    type: ToastType.error);
+                // Suppress raw error noise: avoid showing empty strings
+                // or the literal "null" that bubbles up from upstream
+                // exception toString()s with no message attached.
+                final msg = state.error.trim();
+                if (msg.isNotEmpty && msg != 'null') {
+                  ToastManager.show(
+                      context: context,
+                      message: msg,
+                      type: ToastType.error);
+                }
               }
             },
             builder: (context, authState) {
@@ -818,13 +856,48 @@ class _MobileOtpLoginPageState extends State<MobileOtpLoginPage>
                   ),
                   SizedBox(width: 8.w),
                   Text(
-                    'Checking Truecaller…',
+                    'Opening Truecaller…',
                     style: TextStyle(
                       fontSize: 12.sp,
                       color: Colors.black54,
                     ),
                   ),
                 ],
+              ),
+            ),
+          );
+        }
+        // Opt-in CTA: only render when the SDK has confirmed Truecaller is
+        // usable on this device. On non-Android / no Truecaller installed
+        // we collapse to zero-height so the form layout doesn't shift
+        // when the SDK probe completes ~1s after first paint.
+        if (tcState.status == TruecallerStatus.available) {
+          return Padding(
+            padding: EdgeInsets.only(bottom: 16.h),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: truecallerBlue,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                onPressed: _truecallerAutoTriggered
+                    ? null
+                    : () {
+                        _truecallerAutoTriggered = true;
+                        _truecallerCubit.login();
+                      },
+                icon: const Icon(Icons.phone_android, size: 18),
+                label: const Text(
+                  'Continue with Truecaller',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           );

@@ -54,6 +54,9 @@ class AuthRepository {
         throw ApiException(message);
       }
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       throw ApiException(e.toString());
     }
   }
@@ -94,6 +97,9 @@ class AuthRepository {
       }
       return [];
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       throw ApiException(e.toString());
     }
   }
@@ -105,6 +111,9 @@ class AuthRepository {
           .postAPICall(ApiRoutes.verifyUserApi, {'type': type, 'value': value});
       return response.data;
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       throw ApiException(e.toString());
     }
   }
@@ -123,26 +132,48 @@ class AuthRepository {
     }
   }
 
+  /// Sends a Firebase phone-auth OTP and returns the `verificationId` once
+  /// `codeSent` fires.
+  ///
+  /// The previous implementation awaited `auth.verifyPhoneNumber(...)`
+  /// then returned `''` — but `verifyPhoneNumber`'s outer Future resolves
+  /// when platform setup completes, NOT when `codeSent` fires. Callers
+  /// received an empty string and OTP entry was impossible. This now
+  /// bridges the callback-style API into an awaitable Future via
+  /// Completer (same pattern as `sendOTPWithCallback`).
   Future<String> sendOTP({required String phoneNumber}) async {
-    try {
-      final FirebaseAuth auth = FirebaseAuth.instance;
+    final FirebaseAuth auth = FirebaseAuth.instance;
+    final Completer<String> completer = Completer<String>();
 
+    try {
       await auth.verifyPhoneNumber(
         phoneNumber: phoneNumber,
         verificationCompleted: (PhoneAuthCredential credential) {},
         verificationFailed: (FirebaseAuthException e) {
-          throw ApiException(_describeFirebaseAuthError(e, 'Failed to send OTP'));
+          if (!completer.isCompleted) {
+            completer.completeError(ApiException(
+                _describeFirebaseAuthError(e, 'Failed to send OTP')));
+          }
         },
-        codeSent: (String verificationId, int? resendToken) {},
+        codeSent: (String verificationId, int? resendToken) {
+          if (!completer.isCompleted) {
+            completer.complete(verificationId);
+          }
+        },
         codeAutoRetrievalTimeout: (String verificationId) {},
         timeout: const Duration(seconds: 60),
       );
 
-      return '';
+      return await completer.future;
     } on FirebaseAuthException catch (e) {
       throw ApiException(_describeFirebaseAuthError(e, 'Failed to send OTP'));
     } on PlatformException catch (e) {
       throw ApiException(_describePlatformError(e, 'Failed to send OTP'));
+    } on ApiException {
+      // Already wrapped — re-throw as-is to avoid the
+      // `ApiException: ApiException: <real msg>` double-prefix that
+      // `e.toString()` wrapping would produce in the UI.
+      rethrow;
     } catch (e) {
       throw ApiException(e.toString());
     }
@@ -181,6 +212,9 @@ class AuthRepository {
     } on PlatformException catch (e) {
       throw ApiException(_describePlatformError(e, 'Failed to send OTP'));
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       throw ApiException(e.toString());
     }
   }
@@ -200,6 +234,9 @@ class AuthRepository {
     } on PlatformException catch (e) {
       throw ApiException(_describePlatformError(e, 'OTP verification failed'));
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       throw ApiException(e.toString());
     }
   }
@@ -245,6 +282,10 @@ class AuthRepository {
         return response.data;
       }
       return {};
+    } on ApiException {
+      // Don't double-wrap an already-typed ApiException — that produces
+      // `ApiException: ApiException: <real message>` in the UI toast.
+      rethrow;
     } catch (e) {
       throw ApiException(e.toString());
     }
@@ -282,15 +323,28 @@ class AuthRepository {
           if (country != null && country.isNotEmpty) 'country': country,
         },
       );
-      // Mirror mobileOtpLogin's success contract: status 200 AND
-      // success==true. Anything else surfaces as ApiException so the
-      // caller can show an inline error toast instead of silently
-      // navigating to /home with no session.
-      if (response.statusCode == 200 && response.data['success'] == true) {
+      // Mirror mobileOtpLogin's success contract: accept any 200 response.
+      // The Laravel backend does NOT consistently return `success: true`
+      // (the same shape works for /mobile-otp-auth at line 244 with no
+      // success-flag check), so requiring BOTH made Truecaller login
+      // throw ApiException on perfectly valid 200 payloads. The earlier
+      // asymmetric check was a regression vs the sibling mobileOtpLogin.
+      if (response.statusCode == 200) {
+        // Defensive: if the backend explicitly returns success:false in a
+        // 200 envelope, surface the error message rather than treating
+        // the empty body as a valid session.
+        if (response.data is Map &&
+            response.data['success'] == false) {
+          throw ApiException(response.data['message']?.toString() ??
+              'Truecaller login failed');
+        }
         return response.data;
       }
       throw ApiException(
           response.data['message']?.toString() ?? 'Truecaller login failed');
+    } on ApiException {
+      // Don't double-wrap — preserves the original message in the toast.
+      rethrow;
     } catch (e) {
       throw ApiException(e.toString());
     }
@@ -319,6 +373,9 @@ class AuthRepository {
       }
       return {};
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       throw ApiException(e.toString());
     }
   }
@@ -357,6 +414,9 @@ class AuthRepository {
         throw ApiException('Failed to sign in');
       }
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       // Log full error so we can diagnose silent failures (SHA-1 mismatch,
       // Web client misconfig, etc.). Without this print the error vanishes.
       log('googleLogin error: $e');
@@ -435,6 +495,9 @@ class AuthRepository {
         throw ApiException('Apple login failed: ${e.message}');
       }
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       throw Exception(e.toString());
     }
   }
@@ -449,6 +512,9 @@ class AuthRepository {
       }
       return {};
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       throw ApiException(e.toString());
     }
   }
@@ -487,6 +553,9 @@ class AuthRepository {
         throw ApiException(response.data['message'] ?? 'Failed to send OTP');
       }
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       throw ApiException(e.toString());
     }
   }
@@ -505,6 +574,9 @@ class AuthRepository {
       throw ApiException(
           response.data['message']?.toString() ?? 'Failed to apply referral');
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       throw ApiException(e.toString());
     }
   }
@@ -545,6 +617,9 @@ class AuthRepository {
             response.data['message'] ?? 'OTP verification failed');
       }
     } catch (e) {
+      // If we already threw an ApiException above (e.g. statusCode != 200),
+      // rethrow so the message doesn't get prefixed with "ApiException: ".
+      if (e is ApiException) rethrow;
       throw ApiException(e.toString());
     }
   }

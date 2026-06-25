@@ -1,5 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
+    <!-- INTERNET must be declared in the MAIN manifest, NOT only in
+         debug/profile flavors. Without this in the release manifest, every
+         network call (Firebase verifyPhoneNumber, /auth/send-otp, Truecaller
+         callback exchange, everything) fails with SecurityException at
+         runtime — the debug APK appears to work while the release APK is
+         dead-on-arrival. CRITICAL release blocker. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Used by the OTP autofill / SMS retriever path. Receiving OTP SMS to
+         auto-populate the field requires this permission on Android. -->
+    <uses-permission android:name="android.permission.RECEIVE_SMS" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission-sdk-23 android:name="android.permission.ACCESS_FINE_LOCATION" />
