@@ -23,7 +23,15 @@ double getSpacing(BuildContext context) {
 }
 
 bool isValidHomeGeneralSettings(HomeGeneralSettings settings) {
-  return settings.title.trim().isNotEmpty ||
-      settings.icon.trim().isNotEmpty ||
-      settings.activeIcon.trim().isNotEmpty;
+  // Custom-branded home tab requires VISUAL imagery — icon or active icon.
+  // A bare title alone (e.g. 'ALL' i18n placeholder seeded into prod DB)
+  // is not enough; activating the override path with no icons forces the
+  // background to white + font to black and breaks dark theme + clashes
+  // with the normal home design.
+  return settings.icon.trim().isNotEmpty ||
+      settings.activeIcon.trim().isNotEmpty ||
+      // Title still counts if it is BESIDES the generic 'ALL' / 'All' placeholder
+      // that prod seed data ships with.
+      (settings.title.trim().isNotEmpty &&
+          settings.title.trim().toLowerCase() != 'all');
 }
