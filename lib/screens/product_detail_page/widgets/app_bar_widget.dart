@@ -263,7 +263,11 @@ class _AppBarWidgetState extends State<AppBarWidget> {
             final url = SettingsData.instance.web?.customerWebUrl ?? '';
 
             if (url.isNotEmpty) {
-              final productLink = '${url}share/products/${widget.loadedProduct!.slug}?lat=$lat&lng=$lng';
+              // Defensive join — customerWebUrl from backend is usually
+              // 'https://aasyou.com' (no trailing slash). Bare concat would
+              // produce 'https://aasyou.comshare/products/...'. Normalize.
+              final base = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+              final productLink = '$base/share/products/${widget.loadedProduct!.slug}?lat=$lat&lng=$lng';
 
               final l10n = AppLocalizations.of(context)!;
               final shareText = '${l10n.checkOutThisProduct}\n$productLink';

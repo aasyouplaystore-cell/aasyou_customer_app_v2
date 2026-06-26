@@ -24,6 +24,7 @@ import 'package:aasyou/utils/widgets/custom_scaffold/custom_scaffold.dart';
 import 'package:aasyou/screens/store_follow/bloc/store_follow_bloc.dart';
 import 'package:aasyou/config/api_base_helper.dart';
 import 'package:aasyou/config/global.dart';
+import 'package:aasyou/config/settings_data_instance.dart';
 import 'package:aasyou/router/app_routes.dart';
 import 'package:aasyou/utils/widgets/custom_toast.dart';
 import 'package:go_router/go_router.dart';
@@ -667,9 +668,15 @@ class _NearbyStoreDetailsState extends State<_NearbyStoreDetailsView> {
   }
 
   Future<void> _shareStore(String storeName, String? slug) async {
+    // Pull the public web base from runtime settings (admin → System →
+    // Web → customerWebUrl) instead of hard-coding the staging host. The
+    // old `web-aasyou.ivibetech.in` link leaked dev infra into prod
+    // shares; backend currently serves `https://aasyou.com`.
+    final raw = SettingsData.instance.web?.customerWebUrl ?? 'https://aasyou.com';
+    final base = raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
     final String shareUrl = slug != null && slug.isNotEmpty
-        ? 'https://web-aasyou.ivibetech.in/stores/$slug'
-        : 'https://web-aasyou.ivibetech.in/stores';
+        ? '$base/stores/$slug'
+        : '$base/stores';
     await SharePlus.instance.share(
       ShareParams(
         text: 'Check out $storeName on AasYou — $shareUrl',
