@@ -466,6 +466,11 @@ class WebSettings {
   final String privacyPolicy;
   final String termsCondition;
   final String aboutUs;
+  // Share-link path templates from backend. Apps substitute {slug}, {lat},
+  // {lng} placeholders. Defaults are kept here so older backend installs
+  // (without these keys in the settings JSON) still produce working links.
+  final String storeSharePath;
+  final String productSharePath;
 
   WebSettings({
     required this.siteName,
@@ -515,6 +520,8 @@ class WebSettings {
     required this.privacyPolicy,
     required this.termsCondition,
     required this.aboutUs,
+    required this.storeSharePath,
+    required this.productSharePath,
   });
 
   factory WebSettings.fromJson(Map<String, dynamic> json) {
@@ -566,6 +573,13 @@ class WebSettings {
       privacyPolicy: json['privacyPolicy'] as String,
       termsCondition: json['termsCondition'] as String,
       aboutUs: json['aboutUs'] as String,
+      // Backward-compatible defaults if the backend hasn't been updated yet.
+      storeSharePath: (json['storeSharePath'] as String?)?.isNotEmpty == true
+          ? json['storeSharePath'] as String
+          : '/stores/{slug}',
+      productSharePath: (json['productSharePath'] as String?)?.isNotEmpty == true
+          ? json['productSharePath'] as String
+          : '/share/products/{slug}?lat={lat}&lng={lng}',
     );
   }
 }

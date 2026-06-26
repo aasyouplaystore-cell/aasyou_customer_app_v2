@@ -668,15 +668,19 @@ class _NearbyStoreDetailsState extends State<_NearbyStoreDetailsView> {
   }
 
   Future<void> _shareStore(String storeName, String? slug) async {
-    // Pull the public web base from runtime settings (admin → System →
-    // Web → customerWebUrl) instead of hard-coding the staging host. The
-    // old `web-aasyou.ivibetech.in` link leaked dev infra into prod
-    // shares; backend currently serves `https://aasyou.com`.
-    final raw = SettingsData.instance.web?.customerWebUrl ?? 'https://aasyou.com';
+    // Domain + path BOTH dynamic from backend settings (admin → System →
+    // Web). Path is a template with {slug}; if backend hasn't been updated
+    // with `storeSharePath`, model default '/stores/{slug}' is used.
+    final web = SettingsData.instance.web;
+    final raw = web?.customerWebUrl ?? 'https://aasyou.com';
     final base = raw.endsWith('/') ? raw.substring(0, raw.length - 1) : raw;
-    final String shareUrl = slug != null && slug.isNotEmpty
-        ? '$base/stores/$slug'
-        : '$base/stores';
+    final tpl = web?.storeSharePath ?? '/stores/{slug}';
+    // Strip trailing /{slug} segment if slug is missing (so we don't share
+    // a URL ending in literal "{slug}").
+    final path = (slug != null && slug.isNotEmpty)
+        ? tpl.replaceAll('{slug}', slug)
+        : tpl.replaceAll(RegExp(r'/?\{slug\}.*$'), '');
+    final String shareUrl = '$base$path';
     await SharePlus.instance.share(
       ShareParams(
         text: 'Check out $storeName on AasYou — $shareUrl',

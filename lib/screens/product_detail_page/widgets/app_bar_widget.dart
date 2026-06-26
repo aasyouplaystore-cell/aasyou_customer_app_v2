@@ -260,14 +260,19 @@ class _AppBarWidgetState extends State<AppBarWidget> {
             final location = LocationService.getStoredLocation();
             final lat = location?.latitude ?? SettingsData.instance.web?.defaultLatitude ?? '23.2420';
             final lng = location?.longitude ?? SettingsData.instance.web?.defaultLongitude ?? '69.6669';
-            final url = SettingsData.instance.web?.customerWebUrl ?? '';
+            final web = SettingsData.instance.web;
+            final url = web?.customerWebUrl ?? '';
 
             if (url.isNotEmpty) {
-              // Defensive join — customerWebUrl from backend is usually
-              // 'https://aasyou.com' (no trailing slash). Bare concat would
-              // produce 'https://aasyou.comshare/products/...'. Normalize.
+              // Path template + domain BOTH dynamic. Backend can change
+              // {slug}/{lat}/{lng} URL pattern without an app release.
               final base = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
-              final productLink = '$base/share/products/${widget.loadedProduct!.slug}?lat=$lat&lng=$lng';
+              final tpl = web?.productSharePath ?? '/share/products/{slug}?lat={lat}&lng={lng}';
+              final filled = tpl
+                  .replaceAll('{slug}', widget.loadedProduct!.slug)
+                  .replaceAll('{lat}', '$lat')
+                  .replaceAll('{lng}', '$lng');
+              final productLink = '$base$filled';
 
               final l10n = AppLocalizations.of(context)!;
               final shareText = '${l10n.checkOutThisProduct}\n$productLink';
