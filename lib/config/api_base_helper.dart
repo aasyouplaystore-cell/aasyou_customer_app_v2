@@ -98,8 +98,7 @@ class ApiBaseHelper {
           throw ApiException(
               '${e.response?.data['message']}');
         } else if(e.response?.statusCode == 500 || e.response?.statusCode == 503){
-          throw ApiException(
-              'Server error');
+          throw ApiException('Server error: ${e.response?.data['message'] ?? "unknown"}');   // Surface backend message instead of generic
         }
         throw ApiException(
             '${e.response?.data['message']}');
