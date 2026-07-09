@@ -19,9 +19,13 @@ class AuthSuccess extends AuthState {
 
 class AuthFailed extends AuthState {
   final String error;
-  AuthFailed({required this.error});
+
+  /// Machine-readable failure kind for UI decisions (null = generic).
+  /// Known values: 'invalid-otp', 'session-expired', 'network'.
+  final String? errorCode;
+  AuthFailed({required this.error, this.errorCode});
   @override
-  List<Object?> get props => [error];
+  List<Object?> get props => [error, errorCode];
 }
 
 class RegistrationDataStored extends AuthState {

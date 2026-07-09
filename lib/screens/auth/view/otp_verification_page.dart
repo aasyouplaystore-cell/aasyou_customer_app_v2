@@ -70,6 +70,7 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
     super.initState();
     _verificationId = widget.verificationId;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_isActive || !mounted) return;
       _startResendTimer();
       listenForCode();
     });
@@ -77,19 +78,22 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
 
   @override
   void dispose() {
+    // Order matters: mark inactive and stop the sms_autofill listener BEFORE
+    // disposing the controller — `mounted` is still true while dispose() runs,
+    // so codeUpdated() must be gated by _isActive, not mounted.
     _isActive = false;
+    cancel();
     _resendTicker?.cancel();
     _otpController.dispose();
-    cancel();
     super.dispose();
   }
 
   // ─── SMS autofill callback ────────────────────────────────────────────────
   @override
   void codeUpdated() {
+    if (!_isActive || !mounted) return;
     final c = code;
     if (c == null || c.length != 6) return;
-    if (!mounted) return;
     HapticFeedback.lightImpact();
     _otpController.text = c;
     _submitOtp(c);
@@ -209,6 +213,15 @@ class _OTPVerificationPageState extends State<OTPVerificationPage>
       // If the user already navigated away (handler fires after a state hop),
       // do nothing. _isActive is set false in dispose.
       if (!_isActive || !mounted) return;
+      if (state.errorCode == 'session-expired') {
+        // Old code can't succeed anymore — clear it and open resend right away
+        // instead of making the user wait out the countdown.
+        _resendTicker?.cancel();
+        setState(() {
+          _otpController.clear();
+          _canResend = true;
+        });
+      }
       // Don't show a toast for an empty / generic error — let the previous
       // success state win.
       final msg = state.error.trim();

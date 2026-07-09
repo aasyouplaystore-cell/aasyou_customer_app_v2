@@ -23,6 +23,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   String? _pendingIsoCode;
   int? _lastResendToken;
 
+  // Firebase phone auth fires BOTH verificationCompleted (auto-retrieval) and
+  // the manual submit path for the same credential; signing in twice consumes
+  // the credential and surfaces session-expired. Guard so only one sign-in
+  // runs per sent code; reset on a fresh send/resend or on failure.
+  bool _phoneCredentialInFlight = false;
+
   AuthBloc(this._userDetailBloc) : super(AuthInitial()) {
     on<LoginRequest>(_onLoginRequest);
     on<RegisterRequest>(_onRegisterRequest);
@@ -356,6 +362,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     OnPhoneAuthVerificationCompleted event,
     Emitter<AuthState> emit,
   ) async {
+    if (_phoneCredentialInFlight) {
+      log('Ignoring duplicate phone-auth credential (sign-in already in flight)');
+      return;
+    }
+    _phoneCredentialInFlight = true;
     try {
       final credential = event.credential;
       final userCredential =
@@ -377,9 +388,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         emit(OTPVerified(message: 'OTP Verified'));
       }
     } catch (e, s) {
+      _phoneCredentialInFlight = false; // allow retry after failure
       log('Phone verification failed: $e', stackTrace: s);
       log('  type: ${e.runtimeType}');
       String errorMessage = e.toString();
+      String? errorCode;
       String? code;
       String? rawMessage;
 
@@ -399,17 +412,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           case 'invalid-verification-code':
           case 'ERROR_INVALID_VERIFICATION_CODE':
             errorMessage = 'The entered OTP is incorrect. Please try again.';
+            errorCode = 'invalid-otp';
             break;
           case 'session-expired':
           case 'ERROR_SESSION_EXPIRED':
             errorMessage = 'The OTP session has expired. Please request a new OTP.';
+            errorCode = 'session-expired';
             break;
           case 'invalid-verification-id':
           case 'ERROR_INVALID_VERIFICATION_ID':
             errorMessage = 'The verification session is invalid. Please request a new OTP.';
+            errorCode = 'session-expired';
             break;
           case 'network-request-failed':
             errorMessage = 'Network error. Please check your connection.';
+            errorCode = 'network';
             break;
           case 'too-many-requests':
             errorMessage = 'Too many requests. Please try again in a few minutes.';
@@ -438,7 +455,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             errorMessage = 'Verification failed. Please try again.';
         }
       }
-      emit(AuthFailed(error: errorMessage));
+      emit(AuthFailed(error: errorMessage, errorCode: errorCode));
     }
   }
 
@@ -472,6 +489,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }) async {
     final fullNumber = countryCode + phoneNumber;
     log('Verifying phone: $fullNumber | ISO: $isoCode | isUpdate: $isUpdate');
+    _phoneCredentialInFlight = false; // fresh code => allow one sign-in again
     if (AppHelpers.smsGatewayIsFirebase) {
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: fullNumber,
