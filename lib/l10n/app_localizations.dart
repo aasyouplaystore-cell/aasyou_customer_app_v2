@@ -3958,6 +3958,12 @@ abstract class AppLocalizations {
   /// **'Please verify your email and mobile number before placing the order.'**
   String get pleaseVerifyEmailAndMobileBeforePlacingOrder;
 
+  /// No description provided for @pleaseVerifyMobileBeforePlacingOrder.
+  ///
+  /// In en, this message translates to:
+  /// **'Please verify your mobile number before placing the order.'**
+  String get pleaseVerifyMobileBeforePlacingOrder;
+
   /// No description provided for @emailVerification.
   ///
   /// In en, this message translates to:

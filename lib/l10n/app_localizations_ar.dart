@@ -2067,6 +2067,10 @@ class AppLocalizationsAr extends AppLocalizations {
       'Please verify your email and mobile number before placing the order.';
 
   @override
+  String get pleaseVerifyMobileBeforePlacingOrder =>
+      'Please verify your mobile number before placing the order.';
+
+  @override
   String get emailVerification => 'Email Verification';
 
   @override

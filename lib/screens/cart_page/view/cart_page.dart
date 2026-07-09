@@ -1214,15 +1214,16 @@ class _CartPageState extends State<CartPage> {
                       totalAmount <= 0 || selectedPaymentMethod != null;
                   if (isPlacingOrderNow) {
                     final user = Global.userData;
-                    final bool emailOk =
-                        (user?.emailVerified ?? '').trim().isNotEmpty;
+                    // Mobile-first checkout (TC-002): a verified mobile is
+                    // enough to order; email is optional and never blocks.
+                    // Requires orders.email nullable on the backend.
                     final bool mobileOk =
                         (user?.mobileVerified ?? '').trim().isNotEmpty;
-                    if (!emailOk || !mobileOk) {
+                    if (!mobileOk) {
                       ToastManager.show(
                         context: context,
-                        message: l10n?.pleaseVerifyEmailAndMobileBeforePlacingOrder
-                            ?? 'Please verify your email and mobile number before placing the order.',
+                        message: l10n?.pleaseVerifyMobileBeforePlacingOrder
+                            ?? 'Please verify your mobile number before placing the order.',
                         type: ToastType.error,
                       );
                       GoRouter.of(context).push(AppRoutes.userProfile);

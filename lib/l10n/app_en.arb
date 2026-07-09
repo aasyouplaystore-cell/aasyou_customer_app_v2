@@ -865,6 +865,7 @@
   "verify": "Verify",
   "verified": "Verified",
   "pleaseVerifyEmailAndMobileBeforePlacingOrder": "Please verify your email and mobile number before placing the order.",
+  "pleaseVerifyMobileBeforePlacingOrder": "Please verify your mobile number before placing the order.",
   "emailVerification": "Email Verification",
   "mobileVerification": "Mobile Verification",
   "sendVerificationEmail": "Send Verification Email",
