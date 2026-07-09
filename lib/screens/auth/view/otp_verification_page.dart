@@ -475,6 +475,10 @@ class _OtpField extends StatelessWidget {
           appContext: context,
           length: 6,
           controller: controller,
+          // Page owns this controller and disposes it in State.dispose().
+          // Default true would make the field dispose it first (child unmounts
+          // before parent) => double dispose crash (TC-001 retest).
+          autoDisposeControllers: false,
           obscureText: false,
           animationType: AnimationType.fade,
           animationDuration: const Duration(milliseconds: 300),
