@@ -51,7 +51,7 @@ Android `compileSdk 36`, `targetSdk 36`, `minSdk 24`, Java/Kotlin target `17`. i
 
 ```bash
 # 1. Clone
-git clone https://github.com/Ivibetech/customer-app_2.0.git
+git clone https://github.com/aasyouplaystore-cell/aasyou_customer_app_v2.git
 cd customer-app_2.0
 
 # 2. Install Dart/Flutter dependencies
@@ -98,7 +98,7 @@ This app reads runtime constants from `lib/config/constant.dart` and `lib/config
 
 | Key (in `AppConstant`) | Purpose |
 | --- | --- |
-| `baseUrl` | REST API base URL (production points to `https://aasyou.ivibetech.in/api/`) |
+| `baseUrl` | REST API base URL (production: `https://seller.aasyou.com/api/`) |
 | `appName` | Display name used in toasts / share intents |
 | `packageName` | Android application ID (`com.aasyou.user`) |
 | `androidMapKey` | Google Maps SDK key for Android (`AndroidManifest.xml` + Places SDK) |
@@ -244,13 +244,13 @@ customer-app/
 
 ## Related repos
 
-Part of the **AasYou 2.0** monorepo split across five sibling repositories under the `Ivibetech` org:
+Part of the **AasYou 2.0** monorepo split across five sibling repositories under the `aasyouplaystore-cell` org:
 
-- Backend API + Admin Panel + Seller Panel - https://github.com/Ivibetech/aasyou-backend-admin-seller_2.0
-- Customer Web App (Next.js) - https://github.com/Ivibetech/customer-web-app_2.0
-- Customer Mobile App (this repo) - https://github.com/Ivibetech/customer-app_2.0
-- Delivery Rider Mobile App - https://github.com/Ivibetech/rider-app_2.0
-- Seller Mobile App - https://github.com/Ivibetech/seller-app_2.0
+- Backend API + Admin Panel + Seller Panel - https://github.com/aasyouplaystore-cell/aasyou_admin_v2
+- Customer Web App (Next.js) - https://github.com/aasyouplaystore-cell/aasyou_web_v2
+- Customer Mobile App (this repo) - https://github.com/aasyouplaystore-cell/aasyou_customer_app_v2
+- Delivery Rider Mobile App - https://github.com/aasyouplaystore-cell/aasyou_rider_app_v2
+- Seller Mobile App - https://github.com/aasyouplaystore-cell/aasyou_seller_app_v2
 
 ---
 
