@@ -8,9 +8,10 @@
          dead-on-arrival. CRITICAL release blocker. -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!-- Used by the OTP autofill / SMS retriever path. Receiving OTP SMS to
-         auto-populate the field requires this permission on Android. -->
-    <uses-permission android:name="android.permission.RECEIVE_SMS" />
+    <!-- OTP autofill uses the Google SMS Retriever API (sms_autofill
+         listenForCode + Firebase auto-retrieval) which needs NO SMS
+         permission. Do NOT add RECEIVE_SMS/READ_SMS back — Play Console
+         rejects the AAB (restricted SMS permission group). -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission-sdk-23 android:name="android.permission.ACCESS_FINE_LOCATION" />
