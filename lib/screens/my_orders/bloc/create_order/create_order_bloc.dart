@@ -27,6 +27,8 @@ class CreateOrderBloc extends Bloc<CreateOrderEvent, CreateOrderState> {
         rushDelivery: event.rushDelivery ?? false,
         useWallet: event.useWallet ?? false,
         orderNote: event.orderNote ?? '',
+        customerGstin: event.customerGstin,
+        customerLegalName: event.customerLegalName,
         paymentDetails: event.paymentDetails,
         attachments: event.attachments!
       );

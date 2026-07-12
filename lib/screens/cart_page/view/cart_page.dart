@@ -60,6 +60,7 @@ import '../widgets/cart_product_item.dart';
 import '../widgets/delivery_type_widget.dart';
 import '../widgets/fulfillment_toggle_widget.dart';
 import '../widgets/order_note_widget.dart';
+import '../widgets/gst_invoice_widget.dart';
 import '../widgets/removed_items_widget.dart';
 import '../widgets/wallet_usage_widget.dart';
 import '../widgets/you_might_also_like_product_widget.dart';
@@ -88,6 +89,10 @@ class _CartPageState extends State<CartPage> {
   int? previousDeliveryZoneId;
   String? promoCode;
   String orderNote = '';
+  // GST invoice (business purchase)
+  bool gstEnabled = false;
+  String gstin = '';
+  String gstLegalName = '';
 
   @override
   void initState() {
@@ -732,6 +737,19 @@ class _CartPageState extends State<CartPage> {
                                       },
                                       isEnabled: !isCartLoading,
                                     ),
+                                    GstInvoiceWidget(
+                                      enabled: gstEnabled,
+                                      gstin: gstin,
+                                      legalName: gstLegalName,
+                                      isEnabled: !isCartLoading,
+                                      onChanged: (en, g, name) {
+                                        setState(() {
+                                          gstEnabled = en;
+                                          gstin = g;
+                                          gstLegalName = name;
+                                        });
+                                      },
+                                    ),
                                     BillSummaryWidget(
                                       itemsOriginalPrice: 0,
                                       itemsDiscountedPrice: billSummaryData!.itemsTotal?.toDouble() ?? 0,
@@ -1112,6 +1130,8 @@ class _CartPageState extends State<CartPage> {
           'transaction_id': paymentId,
         } : {},
         orderNote: orderNote,
+        customerGstin: (gstEnabled && gstin.trim().isNotEmpty) ? gstin : null,
+        customerLegalName: gstEnabled ? gstLegalName : null,
         attachments: attachments,
         useWallet: _userWantsWallet,
         deliveryMode: deliveryMode,
@@ -1141,6 +1161,8 @@ class _CartPageState extends State<CartPage> {
         'transaction_id': paymentId,
       } : {},
       orderNote: orderNote,
+      customerGstin: (gstEnabled && gstin.trim().isNotEmpty) ? gstin : null,
+      customerLegalName: gstEnabled ? gstLegalName : null,
       attachments: attachments,
       useWallet: _userWantsWallet,
       deliveryMode: deliveryMode,

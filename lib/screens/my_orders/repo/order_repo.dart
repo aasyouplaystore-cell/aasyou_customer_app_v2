@@ -25,6 +25,8 @@ class OrderRepository {
     required bool useWallet,
     required String orderNote,
     String deliveryMode = 'delivery',
+    String? customerGstin,
+    String? customerLegalName,
     Map<String, dynamic>? paymentDetails,
     required Map<int, List<CartItemAttachment>>? attachments,
   }) async {
@@ -49,6 +51,14 @@ class OrderRepository {
         MapEntry('use_wallet', useWallet ? '1' : '0'),
         MapEntry('order_note', orderNote),
         MapEntry('delivery_mode', deliveryMode),
+        // GST invoice: only when a well-formed GSTIN is present; the server
+        // runs the authoritative checksum and derives place_of_supply.
+        if (customerGstin != null && customerGstin.trim().isNotEmpty) ...[
+          MapEntry('customer_gstin', customerGstin.trim().toUpperCase()),
+          MapEntry('place_of_supply', customerGstin.trim().toUpperCase().substring(0, 2)),
+          if (customerLegalName != null && customerLegalName.trim().isNotEmpty)
+            MapEntry('customer_legal_name', customerLegalName.trim()),
+        ],
         if (paymentType != 'flutterwave') MapEntry('redirect_url', AppConstant.baseUrl),
         // Add paymentDetails if needed (flatten them)
         ...?paymentDetails?.entries.map((e) => MapEntry(e.key, e.value.toString())),

@@ -20,6 +20,10 @@ class CreateOrderRequest extends CreateOrderEvent {
   // create-order POST body so the backend's OrderService::createOrderFromCart
   // can branch on fulfillment mode.
   final String? deliveryMode;
+  // GST invoice (business purchase). Buyer GSTIN + registered legal name;
+  // the backend derives place_of_supply and allocates a per-seller invoice.
+  final String? customerGstin;
+  final String? customerLegalName;
 
   CreateOrderRequest({
     required this.paymentType,
@@ -32,6 +36,8 @@ class CreateOrderRequest extends CreateOrderEvent {
     this.paymentDetails,
     this.attachments,
     this.deliveryMode,
+    this.customerGstin,
+    this.customerLegalName,
   });
 
   @override
@@ -47,5 +53,7 @@ class CreateOrderRequest extends CreateOrderEvent {
     paymentDetails,
     attachments,
     deliveryMode,
+    customerGstin,
+    customerLegalName,
   ];
 }
