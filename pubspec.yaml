@@ -2,7 +2,7 @@ name: aasyou
 description: "AasYou"
 publish_to: 'none'
 
-version: 2.0.3+18
+version: 2.0.4+19
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -90,6 +90,7 @@ dependencies:
   build_runner: ^2.4.13
   animated_theme_switcher: ^2.0.10
   visibility_detector: ^0.4.0+2
+  firebase_crashlytics: ^5.2.4
 
 
 dev_dependencies:

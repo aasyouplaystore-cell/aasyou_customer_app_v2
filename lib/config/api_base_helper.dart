@@ -24,6 +24,19 @@ class ApiException implements Exception {
 }
 
 class ApiBaseHelper {
+  // PERF Phase 1: ONE shared Dio for every call in this helper. A fresh
+  // Dio() per request created a new HttpClient each time — zero connection
+  // reuse, so every API call paid the TCP+TLS handshake again — and had NO
+  // timeouts, so a dead network hung the UI indefinitely. receiveTimeout is
+  // per-chunk (not total), so large downloads/uploads through this client
+  // stay safe. Deliberately no retry/interceptors in Phase 1.
+  static final dio_.Dio _dio = dio_.Dio(
+    dio_.BaseOptions(
+      connectTimeout: const Duration(seconds: 10),
+      receiveTimeout: const Duration(seconds: 20),
+    ),
+  );
+
   Future<void> downloadFile(
       {required String url,
         required dio_.CancelToken cancelToken,
@@ -31,7 +44,7 @@ class ApiBaseHelper {
         required Function(int, int) updateDownloadedPercentage,
       }) async {
     try {
-      final dio_.Dio dio = dio_.Dio();
+      final dio_.Dio dio = _dio;
       await dio.download(
         url,
         savePath,
@@ -73,7 +86,7 @@ class ApiBaseHelper {
   // POST METHOD
   Future<dynamic> postAPICall(String url, dynamic params) async {
     dio_.Response responseJson;
-    final dio_.Dio dio = dio_.Dio();
+    final dio_.Dio dio = _dio;
     try {
       final response =
       await dio.post(
@@ -118,7 +131,7 @@ class ApiBaseHelper {
   // PUT METHOD
   Future<dynamic> putAPICall(String url, dynamic params) async {
     dio_.Response responseJson;
-    final dio_.Dio dio = dio_.Dio();
+    final dio_.Dio dio = _dio;
     try {
       final response = await dio.put(
         url,
@@ -162,7 +175,7 @@ class ApiBaseHelper {
 
   Future<dynamic> getAPICall(String url, dynamic params, {bool? isUserApi, BuildContext? context}) async {
     late dio_.Response responseJson;
-    final dio_.Dio dio = dio_.Dio();
+    final dio_.Dio dio = _dio;
     try {
       final response =
       await dio.get(
@@ -218,7 +231,7 @@ class ApiBaseHelper {
 
   Future<dynamic> deleteAPICall(String url, dynamic params) async {
     dio_.Response responseJson;
-    final dio_.Dio dio = dio_.Dio();
+    final dio_.Dio dio = _dio;
     try {
       final response =
       await dio.delete(
