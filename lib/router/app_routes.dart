@@ -147,6 +147,17 @@ class MyAppRoute {
   static GoRouter router = GoRouter(
       navigatorKey: GlobalKeys.navigatorKey,
       initialLocation: AppRoutes.splashScreen,
+      // A URL that matches no route (e.g. an https App Links path the engine
+      // hands to go_router on cold start) must never dead-end at the default
+      // "Page Not Found" screen — bounce to Home; the app_links handler then
+      // resolves the actual product/store target on top of it.
+      errorBuilder: (context, state) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final ctx = GlobalKeys.navigatorKey.currentContext;
+          if (ctx != null) GoRouter.of(ctx).go(AppRoutes.home);
+        });
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      },
       routes: [
         GoRoute(
           name: '/',

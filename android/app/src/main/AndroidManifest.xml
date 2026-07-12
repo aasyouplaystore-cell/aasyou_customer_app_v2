@@ -49,12 +49,18 @@
               android:resource="@style/NormalTheme"
               />
 
-            <intent-filter android:autoVerify="true">
+            <!-- Custom-scheme deep links used by the web smart banner's
+                 "Open in app" button (intent:// with scheme=aasyou). Products
+                 and stores; slug travels in the query (?slug=). autoVerify is
+                 a no-op on a custom scheme — real https App Links verification
+                 is added in a separate filter once assetlinks.json is live. -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="aasyou"/>
                 <data android:host="products" />
+                <data android:host="stores" />
             </intent-filter>
 
             <intent-filter>

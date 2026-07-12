@@ -110,30 +110,37 @@ class AppLinksDeepLink {
     }
 
     try {
-      String? productSlug = _extractProductSlug(uri);
+      // Store is resolved BEFORE product: a /stores/{slug} link must never be
+      // mistaken for a product (the old last-segment fallback did exactly that).
+      final String? storeSlug = _extractStoreSlug(uri);
+      final String? productSlug = _extractProductSlug(uri);
 
-      if (productSlug != null && productSlug.isNotEmpty) {
-        log('Redirecting to product detail page with slug: $productSlug');
+      await WidgetsBinding.instance.endOfFrame;
+      if (!navigatorContext.mounted) return;
 
-        // Ensure we're on the main thread and context is still valid
-        await WidgetsBinding.instance.endOfFrame;
-        if (!navigatorContext.mounted) return;
+      final router = GoRouter.of(navigatorContext);
+      // Home is always the base route so Back from the deep-linked page lands
+      // somewhere sane.
+      router.go(AppRoutes.home);
 
-        final router = GoRouter.of(navigatorContext);
-        
-        // Ensure Home is the base route
-        router.go(AppRoutes.home);
-        
-        // Navigate to product detail page on top of Home
+      if (storeSlug != null && storeSlug.isNotEmpty) {
+        log('Deep link -> store detail: $storeSlug');
+        router.push(
+          AppRoutes.nearbyStoreDetails,
+          extra: {'store-slug': storeSlug, 'store-name': ''},
+        );
+      } else if (productSlug != null && productSlug.isNotEmpty) {
+        log('Deep link -> product detail: $productSlug');
         router.push(
           AppRoutes.productDetailPage,
           extra: {'productSlug': productSlug},
         );
-        _hasPendingLink = false; // Successfully handled
       } else {
-        log('No product slug found in deep link: $uri');
-        _hasPendingLink = false;
+        // Unknown / unsupported link — land on Home instead of dropping the
+        // link (or, once https App Links are live, crashing to "Page Not Found").
+        log('Deep link had no product/store target, staying on Home: $uri');
       }
+      _hasPendingLink = false;
     } catch (e, stack) {
       _hasPendingLink = false;
       debugPrint('Navigation error: $e');
@@ -184,42 +191,73 @@ class AppLinksDeepLink {
     return null;
   }
 
+  /// Path segments with surrounding whitespace and empty entries removed.
+  /// The empty-entry filter is what makes trailing-slash URLs work: the web
+  /// serves canonical `/products/{slug}/` (trailingSlash:true), whose last
+  /// path segment is an empty string — the old parser saw that empty string
+  /// and dropped the link.
+  List<String> _cleanSegments(Uri uri) =>
+      uri.pathSegments.map((s) => s.trim()).where((s) => s.isNotEmpty).toList();
+
+  /// The segment immediately after the first segment matching any [keys].
+  String? _segmentAfter(List<String> segments, Set<String> keys) {
+    for (var i = 0; i < segments.length; i++) {
+      if (keys.contains(segments[i].toLowerCase()) && i + 1 < segments.length) {
+        final s = segments[i + 1].trim();
+        if (s.isNotEmpty) return s;
+      }
+    }
+    return null;
+  }
+
+  /// Product slug from:
+  ///   /products/{slug}  ·  /share/products/{slug}  ·  /product/{slug}  ·  /p/{slug}
+  ///   aasyou://products?slug=…  ·  ?slug=… / ?product_slug=…
+  /// Returns null for store links so they can never be misrouted to a product
+  /// (the old last-segment fallback treated /stores/{slug} as a product).
   String? _extractProductSlug(Uri uri) {
-    if (uri.pathSegments.contains('product') ||
-        uri.pathSegments.contains('p')) {
-      final index = uri.pathSegments.contains('product')
-          ? uri.pathSegments.indexOf('product')
-          : uri.pathSegments.indexOf('p');
+    final segments = _cleanSegments(uri);
+    final host = uri.host.toLowerCase();
+    final lower = segments.map((s) => s.toLowerCase());
 
-      if (index != -1 && index + 1 < uri.pathSegments.length) {
-        final slug = uri.pathSegments[index + 1];
-        if (slug.isNotEmpty) return slug;
-      }
+    // A store URL is never a product.
+    if (host == 'stores' || host == 'store' ||
+        lower.contains('stores') || lower.contains('store')) {
+      return null;
     }
 
-    // 2. Check query parameters (e.g., ?slug=my-slug or ?product_slug=my-slug)
-    if (uri.queryParameters.containsKey('slug')) {
-      return uri.queryParameters['slug'];
-    }
-    if (uri.queryParameters.containsKey('product_slug')) {
-      return uri.queryParameters['product_slug'];
+    final afterKeyword =
+        _segmentAfter(segments, const {'products', 'product', 'p'});
+    if (afterKeyword != null) return afterKeyword;
+
+    // Custom-scheme host form: aasyou://products?slug=X
+    if (host == 'products' || host == 'product' || host == 'p') {
+      final q = uri.queryParameters['slug']?.trim() ??
+          uri.queryParameters['product_slug']?.trim();
+      if (q != null && q.isNotEmpty) return q;
     }
 
-    // 3.
-    const keywords = {'product', 'p', 'home', 'shop', 'categories', 'cart'};
-    const nonProductPathKeys = {'r', 'referral', 'invite'};
-    if (uri.pathSegments.isNotEmpty) {
-      // Skip if any segment indicates a non-product link (e.g. referral).
-      final segmentSet =
-          uri.pathSegments.map((s) => s.toLowerCase()).toSet();
-      if (segmentSet.any(nonProductPathKeys.contains)) {
-        return null;
-      }
-      final lastSegment = uri.pathSegments.last;
-      if (lastSegment.isNotEmpty &&
-          !keywords.contains(lastSegment.toLowerCase())) {
-        return lastSegment;
-      }
+    final slug = uri.queryParameters['slug']?.trim() ??
+        uri.queryParameters['product_slug']?.trim();
+    if (slug != null && slug.isNotEmpty) return slug;
+
+    return null;
+  }
+
+  /// Store slug from:
+  ///   /stores/{slug}  ·  /store/{slug}  ·  aasyou://stores?slug=…  ·  ?store_slug=…
+  String? _extractStoreSlug(Uri uri) {
+    final segments = _cleanSegments(uri);
+    final host = uri.host.toLowerCase();
+
+    final afterKeyword = _segmentAfter(segments, const {'stores', 'store'});
+    if (afterKeyword != null) return afterKeyword;
+
+    if (host == 'stores' || host == 'store') {
+      final q = uri.queryParameters['slug']?.trim() ??
+          uri.queryParameters['store_slug']?.trim() ??
+          uri.queryParameters['store-slug']?.trim();
+      if (q != null && q.isNotEmpty) return q;
     }
 
     return null;
