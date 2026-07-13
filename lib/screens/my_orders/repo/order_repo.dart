@@ -42,6 +42,16 @@ class OrderRepository {
         paymenttype = '';
       }
 
+      // GST invoice fields are sent ONLY for a structurally valid 15-char
+      // GSTIN. A partial/malformed value is dropped entirely — otherwise
+      // substring(0,2) below would throw a RangeError on a short string and
+      // fail the whole (otherwise valid) checkout. The server still runs the
+      // authoritative mod-36 checksum.
+      final gstin = (customerGstin ?? '').trim().toUpperCase();
+      final gstinValid = RegExp(
+        r'^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}[A-Z]{1}[0-9A-Z]{1}$',
+      ).hasMatch(gstin);
+
       formData.fields.addAll([
         MapEntry('payment_type', paymenttype),
         MapEntry('promo_code', promoCode),
@@ -51,11 +61,10 @@ class OrderRepository {
         MapEntry('use_wallet', useWallet ? '1' : '0'),
         MapEntry('order_note', orderNote),
         MapEntry('delivery_mode', deliveryMode),
-        // GST invoice: only when a well-formed GSTIN is present; the server
-        // runs the authoritative checksum and derives place_of_supply.
-        if (customerGstin != null && customerGstin.trim().isNotEmpty) ...[
-          MapEntry('customer_gstin', customerGstin.trim().toUpperCase()),
-          MapEntry('place_of_supply', customerGstin.trim().toUpperCase().substring(0, 2)),
+        // GST invoice: only when a well-formed 15-char GSTIN is present.
+        if (gstinValid) ...[
+          MapEntry('customer_gstin', gstin),
+          MapEntry('place_of_supply', gstin.substring(0, 2)),
           if (customerLegalName != null && customerLegalName.trim().isNotEmpty)
             MapEntry('customer_legal_name', customerLegalName.trim()),
         ],
