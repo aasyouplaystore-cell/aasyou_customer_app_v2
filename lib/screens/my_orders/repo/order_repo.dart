@@ -130,19 +130,24 @@ class OrderRepository {
     required int perPage,
     required int page,
     required String dateFilter,
-    required String statusFilter
+    required String statusFilter,
+    String billingFilter = '', // online | offline | khata ('' = all)
   }) async {
     try{
       String dateFilterParam = '';
       String statusFilterParam = '';
+      String billingFilterParam = '';
       if(dateFilter.isNotEmpty) {
         dateFilterParam = '&date_range=$dateFilter';
       }
       if(statusFilter.isNotEmpty) {
         statusFilterParam = '&status=$statusFilter';
       }
+      if(billingFilter.isNotEmpty) {
+        billingFilterParam = '&billing=$billingFilter';
+      }
       final response = await AppHelpers.apiBaseHelper.getAPICall(
-        '${ApiRoutes.getMyOrderApi}?page=$page&per_page=$perPage$dateFilterParam$statusFilterParam',
+        '${ApiRoutes.getMyOrderApi}?page=$page&per_page=$perPage$dateFilterParam$statusFilterParam$billingFilterParam',
         {}
       );
       if(response.statusCode == 200 ){

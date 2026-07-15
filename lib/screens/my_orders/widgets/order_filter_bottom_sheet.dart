@@ -48,12 +48,24 @@ class OrderFilterSheet extends StatefulWidget {
 class _OrderFilterSheetState extends State<OrderFilterSheet> {
   late String? _selectedDateFilter;
   late String? _selectedStatusSort;
+  late String? _selectedBilling;
+
+  /// Billing-type options are fixed (not settings-driven): where the bill
+  /// came from — online orders, store-counter (POS) bills, or khata (udhaar).
+  static const List<String> _billingOptions = ['online', 'offline', 'khata'];
 
   @override
   void initState() {
     super.initState();
     _selectedDateFilter = widget.currentFilter.selectedDateFilter;
     _selectedStatusSort = widget.currentFilter.selectedStatusSort;
+    _selectedBilling = widget.currentFilter.selectedBilling;
+  }
+
+  void _toggleBilling(String billing) {
+    setState(() {
+      _selectedBilling = _selectedBilling == billing ? null : billing;
+    });
   }
 
   void _toggleStatus(String status) {
@@ -84,10 +96,12 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
     setState(() {
       _selectedDateFilter = null;
       _selectedStatusSort = null;
+      _selectedBilling = null;
     });
     widget.onApply(OrderFilter(
       selectedDateFilter: _selectedDateFilter,
       selectedStatusSort: _selectedStatusSort,
+      selectedBilling: _selectedBilling,
     ));
     Navigator.pop(context);
   }
@@ -160,20 +174,36 @@ class _OrderFilterSheetState extends State<OrderFilterSheet> {
               onTap: _toggleSort,
               singleSelect: true,
             ),
-        
+
+            const SizedBox(height: 8),
+
+            // --- Section 3: Billing type (single-select) ---
+            // online = app/website orders · offline = store (POS) bills ·
+            // khata = udhaar bills.
+            const _SectionLabel(label: 'Billing'),
+            _ChipWrap(
+              options: _billingOptions,
+              selected: _selectedBilling != null ? {_selectedBilling!} : {},
+              onTap: _toggleBilling,
+              singleSelect: true,
+            ),
+
             const SizedBox(height: 16),
-        
+
             // Apply button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: SizedBox(
                 width: double.infinity,
                 child: CustomButton(
-                  isDisabled: _selectedStatusSort == null && _selectedDateFilter == null,
+                  isDisabled: _selectedStatusSort == null &&
+                      _selectedDateFilter == null &&
+                      _selectedBilling == null,
                   onPressed: () {
                     widget.onApply(OrderFilter(
                       selectedDateFilter: _selectedDateFilter,
                       selectedStatusSort: _selectedStatusSort,
+                      selectedBilling: _selectedBilling,
                     ));
                     Navigator.pop(context);
                   },

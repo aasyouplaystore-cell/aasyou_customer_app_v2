@@ -9,25 +9,28 @@ abstract class GetMyOrderEvent extends Equatable {
 class FetchMyOrder extends GetMyOrderEvent {
   final String? dateFilter;
   final String? statusSort;
-  FetchMyOrder({this.dateFilter, this.statusSort});
+  final String? billing; // online | offline | khata
+  FetchMyOrder({this.dateFilter, this.statusSort, this.billing});
   @override
   // TODO: implement props
-  List<Object?> get props => [dateFilter, statusSort];
+  List<Object?> get props => [dateFilter, statusSort, billing];
 }
 
 class FetchMoreMyOrder extends GetMyOrderEvent {
   final String? dateFilter;
   final String? statusSort;
-  FetchMoreMyOrder({this.dateFilter, this.statusSort});
+  final String? billing;
+  FetchMoreMyOrder({this.dateFilter, this.statusSort, this.billing});
   @override
   // TODO: implement props
-  List<Object?> get props => [dateFilter, statusSort];
+  List<Object?> get props => [dateFilter, statusSort, billing];
 }
 
 class RefreshMyOrders extends GetMyOrderEvent {
   final String? dateFilter;
   final String? statusSort;
-  RefreshMyOrders({this.dateFilter, this.statusSort});
+  final String? billing;
+  RefreshMyOrders({this.dateFilter, this.statusSort, this.billing});
   @override
   // TODO: implement props
   List<Object?> get props => [dateFilter, statusSort];

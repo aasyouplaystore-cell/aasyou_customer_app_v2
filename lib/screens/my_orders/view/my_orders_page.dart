@@ -46,6 +46,7 @@ class _MyOrdersPageState extends State<MyOrdersPage> {
         context.read<GetMyOrderBloc>().add(FetchMyOrder(
               dateFilter: _filter.selectedDateFilter,
               statusSort: _filter.selectedStatusSort,
+              billing: _filter.selectedBilling,
             ));
       },
     );

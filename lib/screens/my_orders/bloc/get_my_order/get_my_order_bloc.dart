@@ -24,24 +24,27 @@ class GetMyOrderBloc extends Bloc<GetMyOrderEvent, GetMyOrderState> {
   final OrderRepository repository = OrderRepository();
   String selectedDateFilter = '';
   String selectedStatusFilter = '';
+  String selectedBillingFilter = '';
 
   Future<void> _onFetchMyOrder(FetchMyOrder event, Emitter<GetMyOrderState> emit,) async {
     emit(GetMyOrderLoading());
-    await _fetchOrders(emit, event.dateFilter ?? '', event.statusSort ?? '', isRefresh: false);
+    selectedBillingFilter = event.billing ?? '';
+    await _fetchOrders(emit, event.dateFilter ?? '', event.statusSort ?? '', selectedBillingFilter, isRefresh: false);
   }
 
   // NEW: Refresh without showing full loading
   Future<void> _onRefreshMyOrders(RefreshMyOrders event, Emitter<GetMyOrderState> emit,) async {
+    selectedBillingFilter = event.billing ?? '';
     if (state is GetMyOrderLoaded) {
-      await _fetchOrders(emit, event.dateFilter ?? '', event.statusSort ?? '', isRefresh: true);
+      await _fetchOrders(emit, event.dateFilter ?? '', event.statusSort ?? '', selectedBillingFilter, isRefresh: true);
     } else {
       emit(GetMyOrderLoading());
-      await _fetchOrders(emit, event.dateFilter ?? '', event.statusSort ?? '', isRefresh: false);
+      await _fetchOrders(emit, event.dateFilter ?? '', event.statusSort ?? '', selectedBillingFilter, isRefresh: false);
     }
   }
 
   /// Core fetch logic (used by both initial & refresh)
-  Future<void> _fetchOrders(Emitter<GetMyOrderState> emit,  String dateFilter, String statusFilter, {required bool isRefresh,}) async {
+  Future<void> _fetchOrders(Emitter<GetMyOrderState> emit,  String dateFilter, String statusFilter, String billingFilter, {required bool isRefresh,}) async {
     try {
       // Reset pagination only on refresh or initial load
       if (isRefresh || state is! GetMyOrderLoaded) {
@@ -55,6 +58,7 @@ class GetMyOrderBloc extends Bloc<GetMyOrderEvent, GetMyOrderState> {
         perPage: perPage,
         dateFilter: dateFilter,
         statusFilter: statusFilter,
+        billingFilter: billingFilter,
       );
 
       final newOrders = List<MyOrderData>.from(
@@ -103,7 +107,8 @@ class GetMyOrderBloc extends Bloc<GetMyOrderEvent, GetMyOrderState> {
           page: currentPage,
           perPage: perPage,
           dateFilter: selectedDateFilter,
-          statusFilter: selectedStatusFilter
+          statusFilter: selectedStatusFilter,
+          billingFilter: selectedBillingFilter,
         );
 
         if (response['success'] == true && response['data'] != null) {
