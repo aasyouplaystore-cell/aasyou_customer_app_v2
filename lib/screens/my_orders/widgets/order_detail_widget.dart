@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:aasyou/utils/widgets/date_formatter.dart';
 import 'package:aasyou/l10n/app_localizations.dart';
+import '../model/payment_label.dart';
 
 import '../../../config/helper.dart';
 
@@ -97,7 +98,8 @@ class OrderDetailCard extends StatelessWidget {
             _simpleLabelValue(
               context,
               label: AppLocalizations.of(context)!.payment,
-              value: paymentMethod == 'cod' ? AppLocalizations.of(context)!.cashOnDelivery : paymentMethod == 'wallet' ? AppLocalizations.of(context)!.wallet : AppLocalizations.of(context)!.paidOnline,
+              value: friendlyPaymentLabel(
+                  paymentMethod, AppLocalizations.of(context)),
             ),
             SizedBox(height: 10.h),
 

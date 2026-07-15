@@ -6,6 +6,7 @@ import 'package:aasyou/config/theme.dart';
 import 'package:aasyou/l10n/app_localizations.dart';
 import 'package:aasyou/utils/widgets/custom_toast.dart';
 import 'package:aasyou/utils/widgets/date_formatter.dart';
+import '../model/payment_label.dart';
 
 class OrderMetaCard extends StatelessWidget {
   final String orderId;
@@ -146,16 +147,8 @@ class OrderMetaCard extends StatelessWidget {
     return InkWell(onTap: onTap, child: content);
   }
 
-  String _paymentLabel(AppLocalizations? l10n) {
-    switch (paymentMethod) {
-      case 'cod':
-        return l10n?.cashOnDelivery ?? 'Cash on Delivery';
-      case 'wallet':
-        return l10n?.wallet ?? 'Wallet';
-      default:
-        return l10n?.paidOnline ?? 'Paid Online';
-    }
-  }
+  String _paymentLabel(AppLocalizations? l10n) =>
+      friendlyPaymentLabel(paymentMethod, l10n);
 
   void _copyOrderId(BuildContext context, AppLocalizations? l10n) {
     Clipboard.setData(ClipboardData(text: orderId));
