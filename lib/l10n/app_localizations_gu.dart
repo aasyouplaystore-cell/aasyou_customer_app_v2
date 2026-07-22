@@ -2523,6 +2523,13 @@ class AppLocalizationsGu extends AppLocalizations {
   String get storesInThisMarket => 'આ બજારની દુકાનો';
 
   @override
+  String get noMarketsInYourAreaYet => 'તમારા વિસ્તારમાં હજી કોઈ માર્કેટ નથી';
+
+  @override
+  String get noMarketsInYourAreaYetDescription =>
+      'અમે હજી તમારા વિસ્તારમાં નથી — અન્ય જગ્યાનાં માર્કેટ જોવા લોકેશન બદલો.';
+
+  @override
   String get noMarketCategoriesFound => 'અમને કોઈ બજાર શ્રેણી મળી નથી.';
 
   @override

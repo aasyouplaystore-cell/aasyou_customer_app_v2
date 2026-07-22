@@ -2496,6 +2496,13 @@ class AppLocalizationsAr extends AppLocalizations {
   String get storesInThisMarket => 'المتاجر في هذا السوق';
 
   @override
+  String get noMarketsInYourAreaYet => 'لا توجد أسواق في منطقتك بعد';
+
+  @override
+  String get noMarketsInYourAreaYetDescription =>
+      'لسنا في منطقتك بعد — غيّر موقعك لتصفح الأسواق في أماكن أخرى.';
+
+  @override
   String get noMarketCategoriesFound => 'لم نتمكن من العثور على أي فئة سوق.';
 
   @override

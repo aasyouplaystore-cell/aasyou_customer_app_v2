@@ -104,11 +104,11 @@ class HomeTopAddressSection extends StatelessWidget {
   }
 }
 
-void showHomeLocationBottomSheet(
+Future<void> showHomeLocationBottomSheet(
   BuildContext context, {
   double verticalPadding = 30,
 }) {
-  showModalBottomSheet(
+  return showModalBottomSheet(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,

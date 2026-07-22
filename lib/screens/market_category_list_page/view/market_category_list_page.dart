@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../l10n/app_localizations.dart';
 import '../../../router/app_routes.dart';
+import '../../../services/location/location_service.dart';
+import '../../home_page/widgets/sections/home_top_address_section.dart';
 import '../../../utils/widgets/custom_circular_progress_indicator.dart';
 import '../../../utils/widgets/custom_refresh_indicator.dart';
 import '../../../utils/widgets/custom_scaffold/custom_scaffold.dart';
@@ -46,15 +51,24 @@ class _MarketCategoryListView extends StatefulWidget {
 
 class _MarketCategoryListViewState extends State<_MarketCategoryListView> {
   final ScrollController _scrollController = ScrollController();
+  StreamSubscription<BoxEvent>? _locationSub;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    // The Change Location flow saves the new location from the map picker
+    // AFTER the bottom sheet has already popped, so awaiting the sheet
+    // refetches too early. Watching the Hive box catches the actual save.
+    _locationSub =
+        Hive.box<dynamic>('userLocationBox').watch().listen((_) {
+      if (mounted) _onRefresh();
+    });
   }
 
   @override
   void dispose() {
+    _locationSub?.cancel();
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -138,8 +152,25 @@ class _MarketCategoryListViewState extends State<_MarketCategoryListView> {
                   : ListView(
                       children: [
                         SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.3),
-                        Center(child: NoCategoryPage(onRetry: _onRefresh)),
+                            height: MediaQuery.of(context).size.height * 0.25),
+                        // Markets are zone-scoped: with a saved location an
+                        // empty list means "no market serves your area", so
+                        // offer Change Location instead of a bare retry.
+                        Center(
+                          child: LocationService.getStoredLocation() != null
+                              ? EmptyStatePageOnLocation(
+                                  title: l10n?.noMarketsInYourAreaYet ??
+                                      'No markets in your area yet',
+                                  description:
+                                      l10n?.noMarketsInYourAreaYetDescription ??
+                                          "We're not in your area yet — change your location to browse markets elsewhere.",
+                                  imageAsset:
+                                      'assets/images/empty-states/no-product-found.png',
+                                  onRetry: () =>
+                                      showHomeLocationBottomSheet(context),
+                                )
+                              : NoCategoryPage(onRetry: _onRefresh),
+                        ),
                       ],
                     ),
             );

@@ -8,7 +8,7 @@ import 'market_category_detail_state.dart';
 
 /// Bloc for the Market Category detail screen.
 ///
-/// Hits `GET /market-categories?slug=<slug>&include_no_product=true` which
+/// Hits `GET /market-categories?slug=<slug>&include_no_product=false` which
 /// returns the parent inside `main_category_data` and the children inside
 /// `data.data`. Pre-warms banner/icon/background image URLs through the
 /// shared [customCacheManager] (mirrors [CategoryBloc] behaviour) so the

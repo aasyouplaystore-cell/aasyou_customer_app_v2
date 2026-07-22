@@ -2518,6 +2518,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get storesInThisMarket => 'Stores in this market';
 
   @override
+  String get noMarketsInYourAreaYet => 'No markets in your area yet';
+
+  @override
+  String get noMarketsInYourAreaYetDescription =>
+      'We\'re not in your area yet — change your location to browse markets elsewhere.';
+
+  @override
   String get noMarketCategoriesFound =>
       'We couldn\'t find any market categories.';
 

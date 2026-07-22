@@ -986,6 +986,8 @@
   "shopByMarketCategory": "تسوق حسب السوق",
   "browseMarkets": "تصفح الأسواق",
   "storesInThisMarket": "المتاجر في هذا السوق",
+  "noMarketsInYourAreaYet": "لا توجد أسواق في منطقتك بعد",
+  "noMarketsInYourAreaYetDescription": "لسنا في منطقتك بعد — غيّر موقعك لتصفح الأسواق في أماكن أخرى.",
   "noMarketCategoriesFound": "لم نتمكن من العثور على أي فئة سوق.",
   "noStoresInMarket": "لا توجد متاجر في هذا السوق حتى الآن.",
   "storeCountOne": "{count} متجر",

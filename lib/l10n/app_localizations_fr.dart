@@ -2547,6 +2547,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get storesInThisMarket => 'Magasins de ce marché';
 
   @override
+  String get noMarketsInYourAreaYet =>
+      'Aucun marché dans votre zone pour le moment';
+
+  @override
+  String get noMarketsInYourAreaYetDescription =>
+      'Nous ne sommes pas encore dans votre zone — changez de lieu pour parcourir d\'autres marchés.';
+
+  @override
   String get noMarketCategoriesFound => 'Aucune catégorie de marché trouvée.';
 
   @override

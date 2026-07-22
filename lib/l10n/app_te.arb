@@ -986,6 +986,8 @@
   "shopByMarketCategory": "మార్కెట్ ద్వారా షాపింగ్",
   "browseMarkets": "మార్కెట్‌లను బ్రౌజ్ చేయండి",
   "storesInThisMarket": "ఈ మార్కెట్‌లోని స్టోర్‌లు",
+  "noMarketsInYourAreaYet": "మీ ప్రాంతంలో ఇంకా మార్కెట్లు లేవు",
+  "noMarketsInYourAreaYetDescription": "మేము ఇంకా మీ ప్రాంతంలో లేము — ఇతర ప్రాంతాల మార్కెట్లను చూడటానికి లొకేషన్ మార్చండి.",
   "noMarketCategoriesFound": "మాకు మార్కెట్ వర్గాలు ఏవీ కనుగొనబడలేదు.",
   "noStoresInMarket": "ఈ మార్కెట్‌లో ఇంకా స్టోర్‌లు లేవు.",
   "storeCountOne": "{count} స్టోర్",

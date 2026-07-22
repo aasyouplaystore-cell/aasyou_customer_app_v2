@@ -2516,6 +2516,13 @@ class AppLocalizationsHi extends AppLocalizations {
   String get storesInThisMarket => 'इस बाज़ार के स्टोर';
 
   @override
+  String get noMarketsInYourAreaYet => 'आपके क्षेत्र में अभी कोई मार्केट नहीं';
+
+  @override
+  String get noMarketsInYourAreaYetDescription =>
+      'हम अभी आपके क्षेत्र में नहीं हैं — अन्य जगहों के मार्केट देखने के लिए लोकेशन बदलें।';
+
+  @override
   String get noMarketCategoriesFound => 'हमें कोई बाज़ार श्रेणी नहीं मिली।';
 
   @override

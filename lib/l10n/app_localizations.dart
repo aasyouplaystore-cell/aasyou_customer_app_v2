@@ -4708,6 +4708,18 @@ abstract class AppLocalizations {
   /// **'Stores in this market'**
   String get storesInThisMarket;
 
+  /// No description provided for @noMarketsInYourAreaYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No markets in your area yet'**
+  String get noMarketsInYourAreaYet;
+
+  /// No description provided for @noMarketsInYourAreaYetDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'re not in your area yet — change your location to browse markets elsewhere.'**
+  String get noMarketsInYourAreaYetDescription;
+
   /// No description provided for @noMarketCategoriesFound.
   ///
   /// In en, this message translates to:

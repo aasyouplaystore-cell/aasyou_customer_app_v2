@@ -986,6 +986,8 @@
   "shopByMarketCategory": "બજાર પ્રમાણે ખરીદો",
   "browseMarkets": "બજારો જુઓ",
   "storesInThisMarket": "આ બજારની દુકાનો",
+  "noMarketsInYourAreaYet": "તમારા વિસ્તારમાં હજી કોઈ માર્કેટ નથી",
+  "noMarketsInYourAreaYetDescription": "અમે હજી તમારા વિસ્તારમાં નથી — અન્ય જગ્યાનાં માર્કેટ જોવા લોકેશન બદલો.",
   "noMarketCategoriesFound": "અમને કોઈ બજાર શ્રેણી મળી નથી.",
   "noStoresInMarket": "આ બજારમાં હજી કોઈ દુકાન નથી.",
   "storeCountOne": "{count} દુકાન",

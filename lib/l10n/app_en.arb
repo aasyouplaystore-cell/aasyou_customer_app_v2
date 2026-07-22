@@ -1100,6 +1100,8 @@
   "shopByMarketCategory": "Shop by market",
   "browseMarkets": "Browse Markets",
   "storesInThisMarket": "Stores in this market",
+  "noMarketsInYourAreaYet": "No markets in your area yet",
+  "noMarketsInYourAreaYetDescription": "We're not in your area yet — change your location to browse markets elsewhere.",
   "noMarketCategoriesFound": "We couldn't find any market categories.",
   "noStoresInMarket": "No stores in this market yet.",
   "storeCountOne": "{count} store",

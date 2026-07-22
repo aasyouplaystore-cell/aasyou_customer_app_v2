@@ -2537,6 +2537,13 @@ class AppLocalizationsTe extends AppLocalizations {
   String get storesInThisMarket => 'ఈ మార్కెట్‌లోని స్టోర్‌లు';
 
   @override
+  String get noMarketsInYourAreaYet => 'మీ ప్రాంతంలో ఇంకా మార్కెట్లు లేవు';
+
+  @override
+  String get noMarketsInYourAreaYetDescription =>
+      'మేము ఇంకా మీ ప్రాంతంలో లేము — ఇతర ప్రాంతాల మార్కెట్లను చూడటానికి లొకేషన్ మార్చండి.';
+
+  @override
   String get noMarketCategoriesFound =>
       'మాకు మార్కెట్ వర్గాలు ఏవీ కనుగొనబడలేదు.';
 

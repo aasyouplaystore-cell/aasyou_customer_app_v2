@@ -986,6 +986,8 @@
   "shopByMarketCategory": "Achetez par marché",
   "browseMarkets": "Parcourir les marchés",
   "storesInThisMarket": "Magasins de ce marché",
+  "noMarketsInYourAreaYet": "Aucun marché dans votre zone pour le moment",
+  "noMarketsInYourAreaYetDescription": "Nous ne sommes pas encore dans votre zone — changez de lieu pour parcourir d'autres marchés.",
   "noMarketCategoriesFound": "Aucune catégorie de marché trouvée.",
   "noStoresInMarket": "Aucun magasin dans ce marché pour le moment.",
   "storeCountOne": "{count} magasin",
