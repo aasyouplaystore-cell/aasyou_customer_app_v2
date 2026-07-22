@@ -92,6 +92,43 @@ class ProductBottomCartBar extends StatelessWidget {
         }
 
         final product = state.productData[0];
+
+        // Browse-only shared link (viewer outside the delivery zones):
+        // replace add-to-cart with a clear notice — ordering isn't possible
+        // here, but the product stays fully viewable.
+        if (!product.isDeliverable) {
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, -2),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              top: false,
+              child: Row(
+                children: [
+                  Icon(Icons.location_off_outlined,
+                      color: Theme.of(context).colorScheme.error),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      l10n.deliveryNotAvailableAtThisLocation,
+                      style: const TextStyle(
+                          fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }
+
         final activeVariant = _getActiveVariant(product);
 
         return Container(

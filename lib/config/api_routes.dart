@@ -37,6 +37,10 @@ class ApiRoutes {
       '${AppConstant.baseUrl}delivery-zone/products';
   static String storeProductApi =
       '${AppConstant.baseUrl}delivery-zone/products';
+  // Location-free store catalog — browse-only fallback for shared store
+  // links opened outside the store's delivery zones.
+  static String storeWiseProductApi =
+      '${AppConstant.baseUrl}products/store-wise';
   static String getCartApi = '${AppConstant.baseUrl}user/cart';
   static String removeItemFromCartApi = '${AppConstant.baseUrl}user/cart/item/';
   static String clearCartApi = '${AppConstant.baseUrl}user/cart/clear-cart';

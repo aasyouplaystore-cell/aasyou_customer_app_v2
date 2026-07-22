@@ -611,18 +611,33 @@ class _LocationPickerWidgetState extends State<LocationPickerWidget>
   }
 
   void _confirmLocation() async {
+    // Out-of-zone handling splits by intent:
+    //  - Delivery ADDRESS (isFromAddressPage): still block — an address that
+    //    can't receive delivery is pointless and order-create would reject it.
+    //  - Browse LOCATION (home): ALLOW saving with a heads-up. The customer
+    //    can then browse stores/products anywhere; ordering is gated at
+    //    checkout. Previously this was a hard dead-end (couldn't even set
+    //    their real location to look around).
     if (!_isDeliveryAvailable && !_showForm) {
-      // Show error message if delivery is not available
       final l10n = AppLocalizations.of(context)!;
+      if (widget.isFromAddressPage) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_deliveryMessage.isEmpty
+                ? l10n.deliveryNotAvailableAtThisLocation
+                : _deliveryMessage),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+      // Browse mode: inform, then fall through to save the location.
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_deliveryMessage.isEmpty
-              ? l10n.deliveryNotAvailableAtThisLocation
-              : _deliveryMessage),
-          backgroundColor: Colors.red,
+          content: Text(l10n.sorryWeDontDeliverHereYet),
+          backgroundColor: Colors.orange.shade800,
         ),
       );
-      return;
     }
 
     if (!widget.isFromAddressPage) {

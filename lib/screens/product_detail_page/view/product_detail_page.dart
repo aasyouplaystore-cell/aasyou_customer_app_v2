@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:aasyou/l10n/app_localizations.dart';
+import 'package:aasyou/screens/home_page/widgets/sections/home_top_address_section.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:aasyou/bloc/user_cart_bloc/user_cart_bloc.dart';
@@ -261,6 +263,12 @@ class _ProductDetailPageState extends State<ProductDetailPage>
                       SliverToBoxAdapter(
                         child: Column(
                           children: [
+                            // Browse-only banner: shared link opened outside
+                            // the product's delivery zones — page stays fully
+                            // viewable, ordering is disabled below.
+                            if (!product.isDeliverable)
+                              _DeliveryUnavailableBanner(),
+
                             // Card 1 — Title + rating + pricing
                             Container(
                               width: double.infinity,
@@ -381,6 +389,52 @@ class _ProductDetailPageState extends State<ProductDetailPage>
         bottomNavigationBar: ProductBottomCartBar(
           selectedVariants: selectedVariants,
         ),
+      ),
+    );
+  }
+}
+
+
+/// Non-blocking notice for browse-only shared links: the viewer's location is
+/// outside this product's delivery zones. The page stays fully viewable;
+/// ordering is disabled and the CTA opens the location picker.
+class _DeliveryUnavailableBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: scheme.error.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.location_off_outlined, color: scheme.error, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n.deliveryNotAvailableAtThisLocation,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: scheme.error,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => showHomeLocationBottomSheet(context),
+            child: Text(
+              l10n.changeLocation,
+              style: const TextStyle(
+                  fontSize: 12.5, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
       ),
     );
   }

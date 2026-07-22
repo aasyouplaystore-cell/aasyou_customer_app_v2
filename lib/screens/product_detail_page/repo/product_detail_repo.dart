@@ -7,11 +7,15 @@ class ProductDetailRepository {
 
   Future<Map<String, dynamic>> fetchProductDetail({required String productSlug}) async {
     try{
+      // Coords are optional server-side now: a shared link opened before any
+      // location exists (or outside every zone) still returns the product
+      // with is_deliverable=false — no more null-bang crash / dead page.
       final locationService = LocationService.getStoredLocation();
-      final latitude = locationService!.latitude;
-      final longitude = locationService.longitude;
+      final query = locationService != null
+          ? '?latitude=${locationService.latitude}&longitude=${locationService.longitude}'
+          : '';
       final response = await apiBaseHelper.getAPICall(
-        '${ApiRoutes.productDetailApi}$productSlug?latitude=$latitude&longitude=$longitude', {}
+        '${ApiRoutes.productDetailApi}$productSlug$query', {}
       );
       return response.data;
     }catch(e){

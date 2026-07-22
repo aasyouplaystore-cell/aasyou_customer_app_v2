@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart' as material show Badge;
+import 'package:aasyou/l10n/app_localizations.dart';
+import 'package:aasyou/screens/home_page/widgets/sections/home_top_address_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:heroicons_flutter/heroicons_flutter.dart';
@@ -293,6 +295,48 @@ class _NearbyStoreDetailsState extends State<_NearbyStoreDetailsView> {
     );
   }
 
+  /// Non-blocking notice for browse-only shared store links: the viewer's
+  /// location is outside this store's delivery zones. Store + catalog stay
+  /// viewable (grid falls back to the location-free store-wise API).
+  Widget _buildDeliveryUnavailableBanner() {
+    final l10n = AppLocalizations.of(context)!;
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: scheme.error.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: scheme.error.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.location_off_outlined, color: scheme.error, size: 20),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              l10n.deliveryNotAvailableAtThisLocation,
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: scheme.error,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => showHomeLocationBottomSheet(context),
+            child: Text(
+              l10n.changeLocation,
+              style:
+                  const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildScrollableContent(StoreData store) {
     // Seed the Shop-Follow controller with the server snapshot so the
     // header heart and follower count stay in sync with every other card
@@ -323,6 +367,9 @@ class _NearbyStoreDetailsState extends State<_NearbyStoreDetailsView> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Browse-only shared link: viewer's location is outside this
+            // store's delivery zones — page stays viewable, ordering gated.
+            if (store.sameLocation == false) _buildDeliveryUnavailableBanner(),
             _buildStoreHero(
               store,
               store.avgStoreRating ?? '0.0',

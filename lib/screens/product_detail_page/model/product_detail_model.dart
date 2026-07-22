@@ -85,6 +85,10 @@ class ProductData {
   final int campaignId;
   final String visitorKey;
 
+  /// False when the viewer's location is outside the product's delivery
+  /// zones (browse-only shared link) — banner + disabled add-to-cart.
+  final bool isDeliverable;
+
   ProductData({
     int? id,
     int? categoryId,
@@ -134,6 +138,7 @@ class ProductData {
     bool? isSponsored,
     int? campaignId,
     String? visitorKey,
+    bool? isDeliverable,
   })  : id = id ?? 0,
         categoryId = categoryId ?? 0,
         brandId = brandId ?? 0,
@@ -178,7 +183,8 @@ class ProductData {
         customProductFeaturedSections = customProductFeaturedSections ?? const [],
         isSponsored = isSponsored ?? false,
         campaignId = campaignId ?? 0,
-        visitorKey = visitorKey ?? '';
+        visitorKey = visitorKey ?? '',
+        isDeliverable = isDeliverable ?? true;
 
 
   factory ProductData.fromJson(Map<String, dynamic> json) {
@@ -234,6 +240,7 @@ class ProductData {
         isSponsored: parseBool(json['is_sponsored']),
         campaignId: parseInt(json['campaign_id']),
         visitorKey: parseString(json['visitor_key']),
+        isDeliverable: parseBool(json['is_deliverable']) ?? true,
       );
     } catch (e, stack) {
       developer.log('Error parsing ProductData: $e', stackTrace: stack);

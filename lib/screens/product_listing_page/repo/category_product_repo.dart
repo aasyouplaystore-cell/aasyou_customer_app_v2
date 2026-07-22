@@ -77,6 +77,27 @@ class CategoryProductRepository {
       }
 
       final response = await AppHelpers.apiBaseHelper.getAPICall(apiUrl, {});
+
+      // Browse-only fallback for shared STORE links: the zone-scoped grid is
+      // empty when the viewer is outside the store's delivery area, but the
+      // store's own catalog still exists — fetch it location-free so the
+      // page shows products (ordering stays gated elsewhere). For a genuinely
+      // empty in-zone store both calls return nothing, so this is harmless.
+      if (type == ProductListingType.store &&
+          storeSlug != null &&
+          (isSearchInStore != true)) {
+        final inner = response.data['data'];
+        final rows = inner is Map<String, dynamic> ? inner['data'] : null;
+        if (rows is List && rows.isEmpty) {
+          final fallback = await AppHelpers.apiBaseHelper.getAPICall(
+            '${ApiRoutes.storeWiseProductApi}'
+            '?store_slug=$storeSlug&per_page=$perPage&page=$currentPage',
+            {},
+          );
+          return fallback.data;
+        }
+      }
+
       return response.data;
 
     } catch (e) {
