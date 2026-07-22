@@ -113,7 +113,9 @@ class _AutoPlayCarouselSliderState extends State<AutoPlayCarouselSlider> {
                             imagePath: banner.bannerImage ?? '',
                             width: double.infinity,
                             height: double.infinity,
-                            fit: BoxFit.cover,
+                            // Admin banner: full art visible, letterboxed.
+                            fit: BoxFit.contain,
+                            memCacheWidth: 1200,
                           ),
                         ),
                       ),

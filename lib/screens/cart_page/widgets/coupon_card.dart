@@ -49,7 +49,9 @@ class CouponCard extends StatelessWidget {
                 const Positioned(
                   top: -20,
                   child: CustomImageContainer(
-                      imagePath: 'assets/images/Group.png'),
+                      imagePath: 'assets/images/Group.png',
+                      // Decorative confetti overlay - full-bleed by design.
+                      fit: BoxFit.cover),
                 ),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

@@ -535,7 +535,8 @@ class _SearchPageState extends State<SearchPage> {
                                             imagePath: item.imageUrl,
                                             height: 80.h,
                                             width: 100.w,
-                                            fit: BoxFit.cover,
+                                            fit: BoxFit.contain,
+                                            memCacheWidth: 260,
                                           ),
                                         ),
                                         SizedBox(height: 4.h),
@@ -787,7 +788,8 @@ class _SearchPageState extends State<SearchPage> {
                                                             product.mainImage,
                                                         width: 40,
                                                         height: 40,
-                                                        fit: BoxFit.cover,
+                                                        fit: BoxFit.contain,
+                                                        memCacheWidth: 120,
                                                       ),
                                                     )
                                                   : const Icon(

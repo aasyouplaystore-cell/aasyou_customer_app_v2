@@ -112,7 +112,8 @@ class OrderItemsRow extends StatelessWidget {
         imageUrl: imageUrl,
         width: 36.w,
         height: 36.w,
-        fit: BoxFit.cover,
+        fit: BoxFit.contain,
+        memCacheWidth: 110,
         placeholder: (_, __) => Container(
           color: scheme.surfaceContainer,
         ),

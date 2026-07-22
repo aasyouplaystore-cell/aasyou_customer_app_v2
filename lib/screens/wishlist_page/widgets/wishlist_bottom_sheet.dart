@@ -235,7 +235,8 @@ class AddToWishlistSheetBody extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(12),
                                       child: Image.network(
                                         item.items.first.product?.image ?? '',
-                                        fit: BoxFit.cover,
+                                        fit: BoxFit.contain,
+                                        cacheWidth: 150,
                                         errorBuilder: (context, error, stackTrace) => Icon(
                                           Icons.image_not_supported,
                                           color: Colors.grey[400],

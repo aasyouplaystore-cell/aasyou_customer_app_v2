@@ -203,7 +203,9 @@ class _MarketsNearYouCardState extends State<_MarketsNearYouCard> {
                 if (imageUrl != null && imageUrl.isNotEmpty)
                   CachedNetworkImage(
                     imageUrl: imageUrl,
+                    // Full-bleed photo card (scrim + text overlay) — cover by design.
                     fit: BoxFit.cover,
+                    memCacheWidth: 700,
                     cacheManager: customCacheManager,
                     placeholder: (_, __) =>
                         Container(color: Colors.black26),

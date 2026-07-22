@@ -40,7 +40,9 @@ class CustomBrandsCard extends StatelessWidget {
               imagePath: brandImage,
               width: size,
               height: size,
-              fit: BoxFit.cover,
+              // Brand LOGO — never edge-crop a logo.
+              fit: BoxFit.contain,
+              memCacheWidth: 200,
             ),
           ),
         ),

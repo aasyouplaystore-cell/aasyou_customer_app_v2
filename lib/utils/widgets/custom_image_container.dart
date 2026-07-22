@@ -9,6 +9,10 @@ class CustomImageContainer extends StatelessWidget {
   final String imagePath;
   final double? width;
   final double? height;
+
+  /// Default `contain`: product/banner/logo art must never be edge-cropped
+  /// (owner rule). Pass `cover` explicitly for decorative full-bleed art and
+  /// circle avatars.
   final BoxFit fit;
   final BorderRadius? borderRadius;
   final Color? backgroundColor;
@@ -16,17 +20,22 @@ class CustomImageContainer extends StatelessWidget {
   final Widget? errorWidget;
   final bool? isForCategoryTab;
 
+  /// Decode cap for list thumbnails (pass ~2× the tile's logical px) so a
+  /// full-size original isn't decoded into RAM for a small row.
+  final int? memCacheWidth;
+
   const CustomImageContainer({
     super.key,
     required this.imagePath,
     this.width,
     this.height,
-    this.fit = BoxFit.cover,
+    this.fit = BoxFit.contain,
     this.borderRadius,
     this.backgroundColor,
     this.placeholder,
     this.errorWidget,
     this.isForCategoryTab = false,
+    this.memCacheWidth,
   });
 
   bool _isNetworkImage(String path) {
@@ -54,6 +63,7 @@ class CustomImageContainer extends StatelessWidget {
                 width: width,
                 height: height,
                 fit: fit,
+                memCacheWidth: memCacheWidth,
                 filterQuality: FilterQuality.high,
                 fadeInDuration: Duration.zero,
                 fadeOutDuration: Duration.zero,
@@ -82,6 +92,7 @@ class CustomImageContainer extends StatelessWidget {
                 width: width,
                 height: height,
                 fit: fit,
+                cacheWidth: memCacheWidth,
                 errorBuilder: (context, error, stackTrace) {
                   return errorWidget ??
                       Container(

@@ -375,7 +375,8 @@ class _HomeStoreStripCard extends StatelessWidget {
                     child: store.banner?.isNotEmpty == true
                         ? CustomImageContainer(
                             imagePath: store.banner!,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
+                            memCacheWidth: 800,
                           )
                         : _gradientPlaceholder(),
                   ),

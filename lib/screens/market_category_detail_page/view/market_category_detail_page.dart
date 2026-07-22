@@ -232,9 +232,13 @@ class _HeroHeader extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
+            // Backdrop so contain-letterbox gaps read as a deliberate surface
+            // (the legibility gradient below tints the whole hero).
+            Container(color: AppTheme.primaryColor.withValues(alpha: 0.08)),
             CachedNetworkImage(
               imageUrl: banner,
-              fit: BoxFit.cover,
+              fit: BoxFit.contain,
+              memCacheWidth: 1200,
               placeholder: (_, __) => Container(
                 color: AppTheme.primaryColor.withValues(alpha: 0.08),
               ),
@@ -287,7 +291,8 @@ class _HeroHeader extends StatelessWidget {
                 height: 80.w,
                 child: CustomImageContainer(
                   imagePath: image,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
+                  memCacheWidth: 240,
                 ),
               ),
             ),

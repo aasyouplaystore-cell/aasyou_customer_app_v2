@@ -291,7 +291,7 @@ class _ReturnItemsDialogState extends State<ReturnItemsDialog> {
             width: 72.w,
             height: 72.w,
             child: imageUrl != null && imageUrl.isNotEmpty
-                ? Image.network(imageUrl, fit: BoxFit.cover)
+                ? Image.network(imageUrl, fit: BoxFit.contain, cacheWidth: 220)
                 : Container(
               color: Colors.grey[200],
               child: Icon(Icons.image, color: Colors.grey[500]),
@@ -809,7 +809,7 @@ class _ProductReturnCard extends StatelessWidget {
         width: isTablet(context) ? 50.h : 60.h,
         height: isTablet(context) ? 50.h : 60.h,
         child: url != null && url.isNotEmpty
-            ? Image.network(url, fit: BoxFit.cover)
+            ? Image.network(url, fit: BoxFit.contain, cacheWidth: 180)
             : Container(
           color: Colors.grey[200],
           child: Icon(Icons.image, color: Colors.grey[500]),

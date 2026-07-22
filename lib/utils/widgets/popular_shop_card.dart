@@ -91,7 +91,8 @@ class PopularShopCard extends StatelessWidget {
                 child: imageUrl != null
                     ? CachedNetworkImage(
                         imageUrl: imageUrl,
-                        fit: BoxFit.cover,
+                        fit: BoxFit.contain,
+                        memCacheWidth: 700,
                         cacheManager: customCacheManager,
                         placeholder: (context, _) => _MediaPlaceholder(
                           color: theme.colorScheme.surfaceContainerHighest,

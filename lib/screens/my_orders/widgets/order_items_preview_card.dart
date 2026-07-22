@@ -181,7 +181,8 @@ class _StackedThumbs extends StatelessWidget {
                 )
               : CachedNetworkImage(
                   imageUrl: url,
-                  fit: BoxFit.cover,
+                  fit: BoxFit.contain,
+                  memCacheWidth: 70,
                   errorWidget: (_, __, ___) => Icon(
                     TablerIcons.package,
                     size: 12.sp,

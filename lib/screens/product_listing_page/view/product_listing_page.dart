@@ -295,7 +295,7 @@ class _ProductListingViewState extends State<_ProductListingView> {
                           child: CachedNetworkImage(
                             imageUrl: widget.logo,
                             height: 35,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
                           ),
                         ),
                       if (widget.type != ProductListingType.store &&

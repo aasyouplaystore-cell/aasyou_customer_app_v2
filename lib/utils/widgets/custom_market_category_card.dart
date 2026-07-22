@@ -48,6 +48,8 @@ class CustomMarketCategoryCard extends StatelessWidget {
                     image: (image != null && image.isNotEmpty)
                         ? DecorationImage(
                             image: NetworkImage(image),
+                            // Full-bleed image+scrim tile: title overlays the photo,
+                            // so cover is the intended design here.
                             fit: BoxFit.cover,
                           )
                         : null,

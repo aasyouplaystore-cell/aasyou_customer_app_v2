@@ -1297,7 +1297,8 @@ class CustomProductCard extends StatelessWidget {
                     child: productImage.isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: productImage,
-                            fit: BoxFit.cover,
+                            fit: BoxFit.contain,
+                            memCacheWidth: 300,
                             placeholder: (_, __) => Container(
                               color: Theme.of(context)
                                   .colorScheme
@@ -1483,7 +1484,7 @@ class CustomProductCard extends StatelessWidget {
 
   Widget _buildAssetImageOrPlaceholder() {
     if (assetImage != null && assetImage!.isNotEmpty) {
-      return CustomImageContainer(imagePath: assetImage!, fit: BoxFit.cover);
+      return CustomImageContainer(imagePath: assetImage!, fit: BoxFit.contain);
     }
     return Builder(
       builder: (context) => Container(

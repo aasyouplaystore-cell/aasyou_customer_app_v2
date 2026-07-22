@@ -62,11 +62,12 @@ class StoreCardInMap extends StatelessWidget {
                   child: Container(
                     height: 100,
                     width: double.infinity,
-                    color: Colors.grey[200],
+                    color: Theme.of(context).colorScheme.surfaceContainerHighest,
                     child: store.banner?.isNotEmpty == true
                         ? CustomImageContainer(
                       imagePath: store.banner!,
-                      fit: BoxFit.cover,
+                      fit: BoxFit.contain,
+                      memCacheWidth: 800,
 
                     )
                         : _gradientPlaceholder(),

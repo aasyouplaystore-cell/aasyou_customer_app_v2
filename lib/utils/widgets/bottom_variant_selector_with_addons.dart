@@ -428,7 +428,8 @@ class _VariantSelectionBottomSheetState
                     imagePath: widget.productImage,
                     width: 44.w,
                     height: 44.w,
-                    fit: BoxFit.cover,
+                    fit: BoxFit.contain,
+                    memCacheWidth: 132,
                     placeholder:
                         const Center(child: CustomCircularProgressIndicator()),
                   )
